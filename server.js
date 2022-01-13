@@ -1,5 +1,5 @@
-if (process.env.NODE_ENV !== 'production') {
-    require('dotenv').config();
+if (process.env.NODE_ENV !== "production") {
+  require("dotenv").config();
 }
 const express = require("express");
 const app = express();
@@ -1766,10 +1766,7 @@ app.get("*", (req, res) => {
 // });
 
 const port = process.env.PORT || 8080;
-<<<<<<< HEAD:app.js
 
-=======
->>>>>>> 818763ac5d3300c3f02fd1624d976a817b04b00f:server.js
 app.listen(port, function () {
   console.log("Server listening on port " + port);
   // console.log("Server listening on port " + process.env.ACCOUNTSID);
