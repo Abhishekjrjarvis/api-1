@@ -12,8 +12,8 @@ const cookieParser = require("cookie-parser");
 const MongoStore = require("connect-mongo");
 // const { DB_URl } = require('./dev')
 const { isLoggedIn, isApproved } = require("./middleware");
-const data = require("./Verify.js");
-const client = require("twilio")(data.ACCOUNTSID, data.AUTHTOKEN);
+// const data = require("./Verify.js");
+const client = require("twilio")(process.env.ACCOUNTSID, process.env.AUTHTOKEN);
 
 const Admin = require("./models/superAdmin");
 const InstituteAdmin = require("./models/InstituteAdmin");
@@ -35,9 +35,7 @@ const Behaviour = require("./models/Behaviour");
 const Attendence = require("./models/Attendence");
 const AttendenceDate = require("./models/AttendenceDate");
 
-const dburl =
-  "mongodb+srv://new-user-web-app:6o2iZ1OFMybEtVDK@cluster0.sdhjn.mongodb.net/myFirstDatabase?retryWrites=true&w=majority";
-// || 'mongodb://localhost:27017/Erp_app'
+const dburl = process.env.MONGO_DU_URL;
 
 mongoose
   .connect(dburl, {
@@ -58,10 +56,10 @@ app.set("/views", path.join(__dirname, "/views"));
 app.use(express.static(path.join(__dirname, "/public")));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-const opt = "*" || "http://localhost:3000";
+
 app.use(
   cors({
-    origin: opt,
+    origin: "*",
     methods: ["GET", "POST", "PUT"],
     credentials: true,
   })
@@ -1316,7 +1314,7 @@ app.post("/user-detail/:uid", async (req, res) => {
   if (user) {
     if (user.userStatus === "Not Verified") {
       client.verify
-        .services(data.SERVICEID)
+        .services(process.env.SERVICEID)
         .verifications.create({
           to: `+91${user.userPhoneNumber}`,
           channel: "sms",
@@ -1339,7 +1337,7 @@ app.post("/user-detail-verify/:uid", async (req, res) => {
   const { uid } = req.params;
   const user = await User.findById({ _id: uid });
   client.verify
-    .services(data.SERVICEID)
+    .services(process.env.SERVICEID)
     .verificationChecks.create({
       to: `+91${user.userPhoneNumber}`,
       code: req.body.userOtpCode,
@@ -1667,7 +1665,7 @@ app.post("/user/forgot", async (req, res) => {
   console.log(institute);
   if (user) {
     client.verify
-      .services(data.SERVICEID)
+      .services(process.env.SERVICEID)
       .verifications.create({
         to: `+91${user.userPhoneNumber}`,
         channel: "sms",
@@ -1680,7 +1678,7 @@ app.post("/user/forgot", async (req, res) => {
       });
   } else if (institute) {
     client.verify
-      .services(data.SERVICEID)
+      .services(process.env.SERVICEID)
       .verifications.create({
         to: `+91${institute.insPhoneNumber}`,
         channel: "sms",
@@ -1702,7 +1700,7 @@ app.post("/user/forgot/:fid", async (req, res) => {
   const institute = await InstituteAdmin.findById({ _id: fid });
   if (user) {
     client.verify
-      .services(data.SERVICEID)
+      .services(process.env.SERVICEID)
       .verificationChecks.create({
         to: `+91${user.userPhoneNumber}`,
         code: req.body.userOtpCode,
@@ -1712,7 +1710,7 @@ app.post("/user/forgot/:fid", async (req, res) => {
       });
   } else {
     client.verify
-      .services(data.SERVICEID)
+      .services(process.env.SERVICEID)
       .verificationChecks.create({
         to: `+91${institute.insPhoneNumber}`,
         code: req.body.userOtpCode,
@@ -1767,8 +1765,11 @@ app.get("*", (req, res) => {
 //   console.log(`Server is Listening On ${port}`);
 // });
 
-const port =
-  process.env.NODE_ENV === "production" ? process.env.PORT || 80 : 5000;
+const port = process.env.PORT || 8080;
+
 app.listen(port, function () {
   console.log("Server listening on port " + port);
+  // console.log("Server listening on port " + process.env.ACCOUNTSID);
+  // console.log("Server listening on port " + process.env.SERVICEID);
+  // console.log("Server listening on port " + port);
 });
