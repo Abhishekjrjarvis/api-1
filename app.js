@@ -61,7 +61,7 @@ app.use(express.json());
 
 app.use(
   cors({
-    origin: "http://52.87.215.1:3000",
+    origin: "*",
     methods: ["GET", "POST", "PUT"],
     credentials: true,
   })
