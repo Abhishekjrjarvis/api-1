@@ -58,10 +58,10 @@ app.set("/views", path.join(__dirname, "/views"));
 app.use(express.static(path.join(__dirname, "/public")));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-const opt = "*" || "http://localhost:3000";
+
 app.use(
   cors({
-    origin: opt,
+    origin: "http://52.87.215.1:3000",
     methods: ["GET", "POST", "PUT"],
     credentials: true,
   })
