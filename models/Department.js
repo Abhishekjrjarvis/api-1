@@ -1,0 +1,62 @@
+const mongoose = require('mongoose')
+const Class = require('./Class')
+const InstituteAdmin = require('./InstituteAdmin')
+const Staff = require('./Staff')
+const Checklist = require('./Checklist')
+const Fees = require('./Fees')
+
+const departmentSchema = new mongoose.Schema({
+    dName: { type: String, required: true },
+    dTitle: { type: String, required: true },
+    dEmail: { type: String },
+    dPhoneNumber: { type: Number, minlength: 10 },
+    dOperatingAdmin: { type: String },
+    dStudentRepr: { type: String },
+    dPhoto: { type: String },
+    dVision: { type:String },
+    dMission: { type:String },
+    dAbout: { type:String },
+    dStaffTotal: { type:Number },
+    dStudentTotal: { type:Number },
+    dAwards: { type: String },
+    dSpeaker: { type: String },
+    dStudentPresident: { type: String },
+    dAdminClerk: { type: String },
+    dVicePrinciple: { type: String },
+    institute: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'InstituteAdmin'
+    },
+    dHead: { 
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Staff'
+    },
+    batches: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Batch'
+        }
+    ],
+    checklists: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Checklist'
+        }
+    ],
+    fees: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Fees'
+        }
+    ],
+    departmentChatGroup: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Staff'
+        }
+    ]
+})
+
+const Department = mongoose.model('Department', departmentSchema)
+
+module.exports = Department
