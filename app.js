@@ -1,5 +1,5 @@
-if (process.env.NODE_ENV !== "production") {
-  require("dotenv").config();
+if (process.env.NODE_ENV !== 'production') {
+    require('dotenv').config();
 }
 const express = require("express");
 const app = express();
@@ -1767,8 +1767,7 @@ app.get("*", (req, res) => {
 //   console.log(`Server is Listening On ${port}`);
 // });
 
-const port =
-  process.env.NODE_ENV === "production" ? process.env.PORT || 80 : 5000;
+const port = process.env.PORT || 8080;
 app.listen(port, function () {
   console.log("Server listening on port " + port);
 });
