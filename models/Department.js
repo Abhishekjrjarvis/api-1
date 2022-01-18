@@ -4,6 +4,7 @@ const InstituteAdmin = require('./InstituteAdmin')
 const Staff = require('./Staff')
 const Checklist = require('./Checklist')
 const Fees = require('./Fees')
+const Holiday = require('./Holiday')
 
 const departmentSchema = new mongoose.Schema({
     dName: { type: String, required: true },
@@ -53,6 +54,16 @@ const departmentSchema = new mongoose.Schema({
         {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Staff'
+        }
+    ],
+    staffAttendence: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'StaffAttendence'
+    },
+    holiday: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Holiday'
         }
     ]
 })

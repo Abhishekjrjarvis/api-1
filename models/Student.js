@@ -32,6 +32,7 @@ const studentSchema = new mongoose.Schema({
     studentAadharCard: { type: String },
     studentStatus: { type: String, default: "Not Approved" },
     studentBehaviourReportStatus: { type: String, default: "Not Ready"},
+    studentGRNO: { type: String },
     studentClass:{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Class'

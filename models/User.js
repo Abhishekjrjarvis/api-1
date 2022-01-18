@@ -3,6 +3,7 @@ const UserPost = require('./userPost')
 const Staff = require('./Staff')
 const InstituteAdmin = require('./InstituteAdmin')
 const Student = require('./Student')
+const UserAnnouncement =require('./UserAnnouncement')
 
 const userSchema = new mongoose.Schema({
     userPhoneNumber: { type: Number, required: true, maxlength: 10 },
@@ -74,6 +75,12 @@ const userSchema = new mongoose.Schema({
         {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'InstituteAdmin'
+        }
+    ],
+    announcement: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'UserAnnouncement'
         }
     ]
 

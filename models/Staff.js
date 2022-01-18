@@ -4,6 +4,8 @@ const User = require('./User')
 const Department = require('./Department')
 const Subject = require('./Subject')
 const Batch = require('./Batch')
+const StaffAttendenceDate = require('./StaffAttendenceDate')
+const StaffAttendence = require('./StaffAttendence')
 
 const staffSchema = new mongoose.Schema({
     staffCode: { type: String },
@@ -28,6 +30,7 @@ const staffSchema = new mongoose.Schema({
     staffDocuments: { type: String }, 
     staffAadharCard: { type: String },
     staffStatus: { type: String, default: "Not Approved" },
+    staffROLLNO: { type: String },
     staffDepartment: [
         {
             type: mongoose.Schema.Types.ObjectId,
@@ -57,6 +60,16 @@ const staffSchema = new mongoose.Schema({
     batches: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Batch'
+    },
+    attendDates: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'StaffAttendenceDate'
+        }
+    ],
+    attendenceRegs: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'StaffAttendence'
     }
 
 })

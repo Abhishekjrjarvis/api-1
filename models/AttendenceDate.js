@@ -42,7 +42,7 @@ const attendenceDateSchema = new mongoose.Schema({
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Student'
         }
-    ]
+    ],
 })
 
 const AttendenceDate = mongoose.model('AttendenceDate', attendenceDateSchema)
