@@ -40,10 +40,7 @@ const StaffAttendence = require("./models/StaffAttendence");
 const StaffAttendenceDate = require("./models/StaffAttendenceDate");
 const UserAnnouncement = require("./models/UserAnnouncement");
 const Holiday = require("./models/Holiday");
-// const multer = require("multer");
-// const upload = multer({ dest: "uploads/" });
-// const { uploadFile } = require("./S3Configuration");
-// // const dburl = process.env.DB_URL
+// const dburl = process.env.DB_URL
 // ||
 
 const dburl =
@@ -188,11 +185,13 @@ app.post("/admin/:aid/approve/ins/:id", async (req, res) => {
   await admin.save();
   await user.save();
   await institute.save();
-  res.status(200).send({
-    message: `Congrats for Approval ${institute.insName}`,
-    admin,
-    institute,
-  });
+  res
+    .status(200)
+    .send({
+      message: `Congrats for Approval ${institute.insName}`,
+      admin,
+      institute,
+    });
 });
 
 // Reject Institute By Super Admin
@@ -208,11 +207,13 @@ app.post("/admin/:aid/reject/ins/:id", async (req, res) => {
   institute.rejectReason = rejectReason;
   await admin.save();
   await institute.save();
-  res.status(200).send({
-    message: `Application Rejected ${institute.insName}`,
-    admin,
-    institute,
-  });
+  res
+    .status(200)
+    .send({
+      message: `Application Rejected ${institute.insName}`,
+      admin,
+      institute,
+    });
 });
 
 // Institute Admin Routes
@@ -220,7 +221,7 @@ app.post("/admin/:aid/reject/ins/:id", async (req, res) => {
 // Institute Creation
 
 app.post("/ins-register", async (req, res) => {
-  const admins = await Admin.findById({ _id: "61d83f55f9245740b77ddec3" });
+  const admins = await Admin.findById({ _id: "61e6b5542501b28fc6d70450" });
   const existInstitute = await InstituteAdmin.findOne({ name: req.body.name });
   const existAdmin = await Admin.findOne({ adminUserName: req.body.name });
   const existUser = await User.findOne({ username: req.body.name });
@@ -232,7 +233,6 @@ app.post("/ins-register", async (req, res) => {
     if (existInstitute) {
       res.send({ message: "Institute Existing with this Username" });
     } else {
-      // console.log("This is document: ", req.body.insDocument);
       const institute = await new InstituteAdmin({ ...req.body });
       console.log(institute);
       admins.instituteList.push(institute);
@@ -417,6 +417,8 @@ app.post("/insprofileabout/:id", async (req, res) => {
   institute.insProfilePhotoPath = req.body.insProfilePhotoPath;
   institute.insProfileCoverPhoto = req.body.insProfileCoverPhoto;
   institute.insProfileCoverPhotoPath = req.body.insProfileCoverPhotoPath;
+  institute.insEditableText = req.body.insEditableText;
+  institute.insEditableTexts = req.body.insEditableTexts;
   await institute.save();
   res
     .status(200)
@@ -449,6 +451,37 @@ app.get("/insdashboard/:id/ins-department", async (req, res) => {
   const { id } = req.params;
   const institute = await InstituteAdmin.findById({ _id: id });
   res.render("Department", { institute });
+});
+
+app.post("/ins/:id/student/certificate", async (req, res) => {
+  const { id } = req.params;
+  const { sid, studentReason, studentCertificateDate } = req.body;
+  const student = await Student.findById({ _id: sid });
+  student.studentReason = studentReason;
+  student.studentCertificateDate = studentCertificateDate;
+  await student.save();
+  res.status(200).send({ message: "student certificate ready", student });
+});
+
+app.post("/ins/:id/student/leaving/certificate", async (req, res) => {
+  const {
+    sid,
+    studentLeavingInsDate,
+    studentLeavingStudy,
+    studentLeavingRemark,
+    studentLeavingBehaviour,
+    studentLeavingReason,
+  } = req.body;
+  const student = await Student.findById({ _id: sid });
+  student.studentLeavingReason = studentLeavingReason;
+  student.studentLeavingInsDate = studentLeavingInsDate;
+  student.studentLeavingStudy = studentLeavingStudy;
+  student.studentLeavingBehaviour = studentLeavingBehaviour;
+  student.studentLeavingRemark = studentLeavingRemark;
+  await student.save();
+  res
+    .status(200)
+    .send({ message: "student leaving certificate ready", student });
 });
 
 // Search Institute For Follow
@@ -583,10 +616,12 @@ app.post("/ins/:id/staff/approve/:sid", async (req, res) => {
   staffs.staffROLLNO = institute.ApproveStaff.length;
   await institute.save();
   await staffs.save();
-  res.status(200).send({
-    message: `Welcome To The Institute ${staffs.staffFirstName} ${staffs.staffLastName}`,
-    institute,
-  });
+  res
+    .status(200)
+    .send({
+      message: `Welcome To The Institute ${staffs.staffFirstName} ${staffs.staffLastName}`,
+      institute,
+    });
 });
 
 // Institute Department Creation
@@ -604,12 +639,14 @@ app.post("/ins/:id/new-department", async (req, res) => {
   await institute.save();
   await staff.save();
   await department.save();
-  res.status(200).send({
-    message: "Successfully Created Department",
-    department,
-    staff,
-    institute,
-  });
+  res
+    .status(200)
+    .send({
+      message: "Successfully Created Department",
+      department,
+      staff,
+      institute,
+    });
 });
 
 // Institute Search for follow Institute Profile
@@ -740,14 +777,16 @@ app.post("/ins/:id/department/:did/batch/:bid", async (req, res) => {
   await staff.save();
   await classRoom.save();
   await depart.save();
-  res.status(200).send({
-    message: "Successfully Created Class",
-    classRoom,
-    staff,
-    batch,
-    institute,
-    depart,
-  });
+  res
+    .status(200)
+    .send({
+      message: "Successfully Created Class",
+      classRoom,
+      staff,
+      batch,
+      institute,
+      depart,
+    });
 });
 
 // Get Institute Classes Data
@@ -806,13 +845,15 @@ app.post(
     await staff.save();
     await subject.save();
     await depart.save();
-    res.status(200).send({
-      message: "Successfully Created Subject",
-      classes,
-      staff,
-      subject,
-      depart,
-    });
+    res
+      .status(200)
+      .send({
+        message: "Successfully Created Subject",
+        classes,
+        staff,
+        subject,
+        depart,
+      });
   }
 );
 
@@ -885,11 +926,13 @@ app.post("/ins/:id/student/:cid/approve/:sid", async (req, res) => {
   await institute.save();
   await classes.save();
   await student.save();
-  res.status(200).send({
-    message: `Welcome To The Institute ${student.studentFirstName} ${student.studentLastName}`,
-    institute,
-    classes,
-  });
+  res
+    .status(200)
+    .send({
+      message: `Welcome To The Institute ${student.studentFirstName} ${student.studentLastName}`,
+      institute,
+      classes,
+    });
 });
 
 // Staff Data
@@ -1160,9 +1203,11 @@ app.post("/student/:sid/fee/:id", async (req, res) => {
     console.log("includes");
     console.log(fData._id);
     console.log(fData.studentsList);
-    res.status(200).send({
-      message: `${student.studentFirstName} paid the ${fData.feeName}`,
-    });
+    res
+      .status(200)
+      .send({
+        message: `${student.studentFirstName} paid the ${fData.feeName}`,
+      });
   } else {
     student.studentFee.push(fData);
     fData.feeStatus = status;
@@ -1170,11 +1215,13 @@ app.post("/student/:sid/fee/:id", async (req, res) => {
     fData.feeStudent = student;
     await student.save();
     await fData.save();
-    res.status(200).send({
-      message: `${fData.feeName} received by ${student.studentFirstName}`,
-      fData,
-      student,
-    });
+    res
+      .status(200)
+      .send({
+        message: `${fData.feeName} received by ${student.studentFirstName}`,
+        fData,
+        student,
+      });
   }
 });
 
@@ -1190,11 +1237,13 @@ app.post("/class/:cid/student/:sid/behaviour", async (req, res) => {
   await classes.save();
   await student.save();
   await bData.save();
-  res.status(200).send({
-    message: `${student.studentFirstName}'s Behaviour Report is ${student.studentBehaviourReportStatus}`,
-    classes,
-    bData,
-  });
+  res
+    .status(200)
+    .send({
+      message: `${student.studentFirstName}'s Behaviour Report is ${student.studentBehaviourReportStatus}`,
+      classes,
+      bData,
+    });
 });
 
 app.post("/class/:cid/student/:sid/attendence", async (req, res) => {
@@ -1237,11 +1286,13 @@ app.post("/department/:did/staff/attendence", async (req, res) => {
     staffAttendReg.department = department;
     await staffAttendDate.save();
     await staffAttendReg.save();
-    res.status(200).send({
-      message: "Staff Attendence Register is Ready",
-      staffAttendDate,
-      staffAttendReg,
-    });
+    res
+      .status(200)
+      .send({
+        message: "Staff Attendence Register is Ready",
+        staffAttendDate,
+        staffAttendReg,
+      });
   }
 });
 
@@ -1276,12 +1327,14 @@ app.post("/student/:sid/attendence/:aid/present/:rid", async (req, res) => {
       await attendDates.save();
       await student.save();
       await attendReg.save();
-      res.status(200).send({
-        message: `${student.studentFirstName} is ${req.body.status} on that day`,
-        attendDates,
-        student,
-        attendReg,
-      });
+      res
+        .status(200)
+        .send({
+          message: `${student.studentFirstName} is ${req.body.status} on that day`,
+          attendDates,
+          student,
+          attendReg,
+        });
     }
   }
 });
@@ -1317,12 +1370,14 @@ app.post("/student/:sid/attendence/:aid/absent/:rid", async (req, res) => {
       await attendDates.save();
       await student.save();
       await attendReg.save();
-      res.status(200).send({
-        message: `${student.studentFirstName} is ${req.body.status} on that day`,
-        attendDates,
-        student,
-        attendReg,
-      });
+      res
+        .status(200)
+        .send({
+          message: `${student.studentFirstName} is ${req.body.status} on that day`,
+          attendDates,
+          student,
+          attendReg,
+        });
     }
   }
 });
@@ -1358,12 +1413,14 @@ app.post("/staff/:sid/attendence/:aid/present/:rid", async (req, res) => {
       await staffAttendDates.save();
       await staff.save();
       await staffAttendReg.save();
-      res.status(200).send({
-        message: `${staff.staffFirstName} is ${req.body.status} on that day`,
-        staffAttendDates,
-        staff,
-        staffAttendReg,
-      });
+      res
+        .status(200)
+        .send({
+          message: `${staff.staffFirstName} is ${req.body.status} on that day`,
+          staffAttendDates,
+          staff,
+          staffAttendReg,
+        });
     }
   }
 });
@@ -1399,12 +1456,14 @@ app.post("/staff/:sid/attendence/:aid/absent/:rid", async (req, res) => {
       await staffAttendDates.save();
       await staff.save();
       await staffAttendReg.save();
-      res.status(200).send({
-        message: `${staff.staffFirstName} is ${req.body.status} on that day`,
-        staffAttendDates,
-        staff,
-        staffAttendReg,
-      });
+      res
+        .status(200)
+        .send({
+          message: `${staff.staffFirstName} is ${req.body.status} on that day`,
+          staffAttendDates,
+          staff,
+          staffAttendReg,
+        });
     }
   }
 });
@@ -1513,7 +1572,7 @@ app.post("/department/holiday/:did", async (req, res) => {
 
 app.post("/user-register", async (req, res) => {
   const { username } = req.body;
-  const admins = await Admin.findById({ _id: "61d83f55f9245740b77ddec3" });
+  const admins = await Admin.findById({ _id: "61e6b5542501b28fc6d70450" });
   const existAdmin = await Admin.findOne({ adminUserName: username });
   const existInstitute = await InstituteAdmin.findOne({ name: username });
   const existUser = await User.findOne({ username: username });
@@ -1548,10 +1607,12 @@ app.post("/user-detail/:uid", async (req, res) => {
           channel: "sms",
         })
         .then((data) => {
-          res.status(200).send({
-            message: "code will be send to registered mobile number",
-            user,
-          });
+          res
+            .status(200)
+            .send({
+              message: "code will be send to registered mobile number",
+              user,
+            });
         });
     } else {
       res.send({ message: "User will be verified..." });
@@ -1901,10 +1962,12 @@ app.post("/user/forgot", async (req, res) => {
         channel: "sms",
       })
       .then((data) => {
-        res.status(200).send({
-          message: "code will be send to registered mobile number",
-          user,
-        });
+        res
+          .status(200)
+          .send({
+            message: "code will be send to registered mobile number",
+            user,
+          });
       });
   } else if (institute) {
     client.verify
@@ -1914,10 +1977,12 @@ app.post("/user/forgot", async (req, res) => {
         channel: "sms",
       })
       .then((data) => {
-        res.status(200).send({
-          message: "code will be send to registered mobile number",
-          institute,
-        });
+        res
+          .status(200)
+          .send({
+            message: "code will be send to registered mobile number",
+            institute,
+          });
       });
   } else {
     res.status(200).send({ message: "Invalid Username" });
