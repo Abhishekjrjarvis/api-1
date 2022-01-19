@@ -39,12 +39,25 @@ const AttendenceDate = require("./models/AttendenceDate");
 const StaffAttendence = require("./models/StaffAttendence");
 const StaffAttendenceDate = require("./models/StaffAttendenceDate");
 const UserAnnouncement = require("./models/UserAnnouncement");
+const SubjectMaster = require("./models/SubjectMaster");
+const ClassMaster = require("./models/ClassMaster");
+const Exam = require("./models/Exam");
 const Holiday = require("./models/Holiday");
+const multer = require("multer");
+const upload = multer({ dest: "uploads/" });
+const fs = require("fs");
+const util = require("util");
+const unlinkFile = util.promisify(fs.unlink);
+
+const { uploadFile, getFileStream } = require("./S3Configuration");
 // const dburl = process.env.DB_URL
 // ||
 
 const dburl =
-  "mongodb+srv://new-user-web-app:6o2iZ1OFMybEtVDK@cluster0.sdhjn.mongodb.net/myFirstDatabase?retryWrites=true&w=majority";
+  "mongodb+srv://new-user-web-app:6o2iZ1OFMybEtVDK@cluster0.sdhjn.mongodb.net/myFirstDatabase?retryWrites=true&w=majority" ||
+  "mongodb://localhost:27017/Erp_app";
+
+// const dburl = "mongodb://localhost:27017/Erp_app";
 
 mongoose
   .connect(dburl, {
@@ -66,6 +79,7 @@ app.use(express.json());
 app.use(
   cors({
     origin: "http://44.200.201.35:3000",
+    // origin: "http://localhost:3000",
     methods: ["GET", "POST", "PUT"],
     credentials: true,
   })
@@ -185,13 +199,11 @@ app.post("/admin/:aid/approve/ins/:id", async (req, res) => {
   await admin.save();
   await user.save();
   await institute.save();
-  res
-    .status(200)
-    .send({
-      message: `Congrats for Approval ${institute.insName}`,
-      admin,
-      institute,
-    });
+  res.status(200).send({
+    message: `Congrats for Approval ${institute.insName}`,
+    admin,
+    institute,
+  });
 });
 
 // Reject Institute By Super Admin
@@ -207,13 +219,11 @@ app.post("/admin/:aid/reject/ins/:id", async (req, res) => {
   institute.rejectReason = rejectReason;
   await admin.save();
   await institute.save();
-  res
-    .status(200)
-    .send({
-      message: `Application Rejected ${institute.insName}`,
-      admin,
-      institute,
-    });
+  res.status(200).send({
+    message: `Application Rejected ${institute.insName}`,
+    admin,
+    institute,
+  });
 });
 
 // Institute Admin Routes
@@ -241,6 +251,28 @@ app.post("/ins-register", async (req, res) => {
       res.send({ message: "Institute", institute });
     }
   }
+});
+
+//======================================================================//
+// app.get("/ins-register/doc/:key", upload.single("file"), async (req, res) => {
+//   const key = req.params.key;
+//   const readStream = getFileStream(key);
+//   readStream.pipe(res);
+// });
+//=====================================================================//
+app.post("/ins-register/doc/:id", upload.single("file"), async (req, res) => {
+  const id = req.params.id;
+  const file = req.file;
+  const results = await uploadFile(file);
+  const institute = await InstituteAdmin.findById({ _id: id });
+  institute.insDocument = results.key;
+  // console.log(
+  //   "This is insDocument for the after updating : ",
+  //   institute.insDocument
+  // );
+  await institute.save();
+  await unlinkFile(file.path);
+  // res.send({ message: "Uploaded" });
 });
 
 // Create Institute Password
@@ -414,9 +446,7 @@ app.post("/insprofileabout/:id", async (req, res) => {
   institute.insAffiliated = req.body.insAffiliated;
   institute.insAchievement = req.body.insAchievement;
   institute.insProfilePhoto = req.body.insProfilePhoto;
-  institute.insProfilePhotoPath = req.body.insProfilePhotoPath;
   institute.insProfileCoverPhoto = req.body.insProfileCoverPhoto;
-  institute.insProfileCoverPhotoPath = req.body.insProfileCoverPhotoPath;
   institute.insEditableText = req.body.insEditableText;
   institute.insEditableTexts = req.body.insEditableTexts;
   await institute.save();
@@ -424,6 +454,33 @@ app.post("/insprofileabout/:id", async (req, res) => {
     .status(200)
     .send({ message: "Institute Profile About Updated", institute });
 });
+
+app.post(
+  "/insprofileabout/photo/:id",
+  upload.single("file"),
+  async (req, res) => {
+    const { id } = req.params;
+    const file = req.file;
+    const results = await uploadFile(file);
+    const institute = await InstituteAdmin.findById({ _id: id });
+    institute.insProfilePhoto = results.key;
+    await institute.save();
+    await unlinkFile(file.path);
+  }
+);
+app.post(
+  "/insprofileabout/coverphoto/:id",
+  upload.single("file"),
+  async (req, res) => {
+    const { id } = req.params;
+    const file = req.file;
+    const results = await uploadFile(file);
+    const institute = await InstituteAdmin.findById({ _id: id });
+    institute.insProfileCoverPhoto = results.key;
+    await institute.save();
+    await unlinkFile(file.path);
+  }
+);
 
 // Institute Announcements Data
 app.post("/ins-announcement/:id", async (req, res) => {
@@ -517,8 +574,9 @@ app.post("/search/:uid/insdashboard/data/:id", async (req, res) => {
 // Institute Staff Joining Form Details
 app.post("/search/insdashboard/staffdata/:sid", async (req, res) => {
   const { sid } = req.params;
-  console.log(req.params);
-  console.log(req.body);
+  // console.log(req.params);
+  // console.log(req.body);
+
   const staff = await Staff.findById({ _id: sid });
   staff.staffFirstName = req.body.staffFirstName;
   staff.staffMiddleName = req.body.staffMiddleName;
@@ -542,7 +600,32 @@ app.post("/search/insdashboard/staffdata/:sid", async (req, res) => {
   await staff.save();
   res.status(200).send({ message: "Staff Info", staff });
 });
-
+app.post(
+  "/search/insdashboard/staffdata/doc/:id",
+  upload.single("file"),
+  async (req, res) => {
+    const sid = req.params.id;
+    const file = req.file;
+    const results = await uploadFile(file);
+    const staff = await Staff.findById({ _id: sid });
+    staff.staffDocuments = results.key;
+    await staff.save();
+    await unlinkFile(file.path);
+  }
+);
+app.post(
+  "/search/insdashboard/staffdata/adh/:id",
+  upload.single("file"),
+  async (req, res) => {
+    const sid = req.params.id;
+    const file = req.file;
+    const results = await uploadFile(file);
+    const staff = await Staff.findById({ _id: sid });
+    staff.staffAadharCard = results.key;
+    await staff.save();
+    await unlinkFile(file.path);
+  }
+);
 // Institute Post For Like
 app.post("/post/like", async (req, res) => {
   const { postId } = req.body;
@@ -616,12 +699,10 @@ app.post("/ins/:id/staff/approve/:sid", async (req, res) => {
   staffs.staffROLLNO = institute.ApproveStaff.length;
   await institute.save();
   await staffs.save();
-  res
-    .status(200)
-    .send({
-      message: `Welcome To The Institute ${staffs.staffFirstName} ${staffs.staffLastName}`,
-      institute,
-    });
+  res.status(200).send({
+    message: `Welcome To The Institute ${staffs.staffFirstName} ${staffs.staffLastName}`,
+    institute,
+  });
 });
 
 // Institute Department Creation
@@ -639,14 +720,12 @@ app.post("/ins/:id/new-department", async (req, res) => {
   await institute.save();
   await staff.save();
   await department.save();
-  res
-    .status(200)
-    .send({
-      message: "Successfully Created Department",
-      department,
-      staff,
-      institute,
-    });
+  res.status(200).send({
+    message: "Successfully Created Department",
+    department,
+    staff,
+    institute,
+  });
 });
 
 // Institute Search for follow Institute Profile
@@ -743,18 +822,70 @@ app.post("/addbatch/:did", async (req, res) => {
 });
 
 // Institute Class Creation In Batch
+// for examination
+
+app.get("/ins/:id/departmentmastersubject/", async (req, res) => {
+  const { id } = req.params;
+  const subjectMaster = await SubjectMaster.find({ institute: id });
+  res.status(200).send({ message: "SubjectMaster Are here", subjectMaster });
+});
+
+// Create Master Subject data
+
+app.post(
+  "/ins/:id/departmentmastersubject/:did/batch/:bid",
+  async (req, res) => {
+    const { id } = req.params;
+    const { subjectName } = req.body;
+    const institute = await InstituteAdmin.findById({ _id: id });
+    const subjectMaster = await new SubjectMaster({
+      subjectName: subjectName,
+      institute: institute._id,
+    });
+    await subjectMaster.save();
+    res
+      .status(200)
+      .send({ message: "Successfully Created Master Subject", subjectMaster });
+  }
+);
+
+// / Master Class Creator Route
+// Get all ClassMaster Data
+app.get("/ins/:id/departmentmasterclass/", async (req, res) => {
+  const { id } = req.params;
+  const classMaster = await ClassMaster.find({ institute: id });
+  res.status(200).send({ message: "ClassMaster Are here", classMaster });
+});
+
+// Create Master Class Data
+app.post("/ins/:id/departmentmasterclass/:did/batch/:bid", async (req, res) => {
+  const { id } = req.params;
+  const { classTitle, className } = req.body;
+  const institute = await InstituteAdmin.findById({ _id: id });
+  const classroomMaster = await new ClassMaster({
+    className: className,
+    classTitle: classTitle,
+    institute: institute._id,
+  });
+  await classroomMaster.save();
+  res
+    .status(200)
+    .send({ message: "Successfully Created MasterClasses", classroomMaster });
+});
 
 app.post("/ins/:id/department/:did/batch/:bid", async (req, res) => {
   const { id, did, bid } = req.params;
-  const { sid, classTitle, className, classCode } = req.body;
+  const { sid, classTitle, className, classCode, mcId } = req.body;
   const institute = await InstituteAdmin.findById({ _id: id });
+  const masterClass = await ClassMaster.findById({ _id: mcId });
+  const mCName = masterClass.className;
   const batch = await Batch.findById({ _id: bid });
   const staff = await Staff.findById({ _id: sid });
   const depart = await Department.findById({ _id: did }).populate({
     path: "dHead",
   });
   const classRoom = await new Class({
-    className: className,
+    className: `${mCName}-${className}`,
     classTitle: classTitle,
     classCode: classCode,
   });
@@ -771,23 +902,65 @@ app.post("/ins/:id/department/:did/batch/:bid", async (req, res) => {
   staff.batches = batch;
   staff.staffClass.push(classRoom);
   classRoom.classTeacher = staff;
-  console.log(classRoom);
   await institute.save();
   await batch.save();
   await staff.save();
   await classRoom.save();
   await depart.save();
-  res
-    .status(200)
-    .send({
-      message: "Successfully Created Class",
-      classRoom,
-      staff,
-      batch,
-      institute,
-      depart,
-    });
+  res.status(200).send({
+    message: "Successfully Created Class",
+    classRoom,
+    staff,
+    batch,
+    institute,
+    depart,
+  });
 });
+
+///////////////////////////////////////////////////////
+
+// app.post("/ins/:id/department/:did/batch/:bid", async (req, res) => {
+//   const { id, did, bid } = req.params;
+//   const { sid, classTitle, className, classCode } = req.body;
+//   const institute = await InstituteAdmin.findById({ _id: id });
+//   const batch = await Batch.findById({ _id: bid });
+//   const staff = await Staff.findById({ _id: sid });
+//   const depart = await Department.findById({ _id: did }).populate({
+//     path: "dHead",
+//   });
+//   const classRoom = await new Class({
+//     className: className,
+//     classTitle: classTitle,
+//     classCode: classCode,
+//   });
+//   institute.classRooms.push(classRoom);
+//   classRoom.institute = institute;
+//   batch.classroom.push(classRoom);
+//   if (String(depart.dHead._id) == String(staff._id)) {
+//     console.log("Same as department Head");
+//   } else {
+//     depart.departmentChatGroup.push(staff);
+//   }
+//   classRoom.batch = batch;
+//   batch.batchStaff.push(staff);
+//   staff.batches = batch;
+//   staff.staffClass.push(classRoom);
+//   classRoom.classTeacher = staff;
+//   console.log(classRoom);
+//   await institute.save();
+//   await batch.save();
+//   await staff.save();
+//   await classRoom.save();
+//   await depart.save();
+//   res.status(200).send({
+//     message: "Successfully Created Class",
+//     classRoom,
+//     staff,
+//     batch,
+//     institute,
+//     depart,
+//   });
+// });
 
 // Get Institute Classes Data
 
@@ -845,15 +1018,13 @@ app.post(
     await staff.save();
     await subject.save();
     await depart.save();
-    res
-      .status(200)
-      .send({
-        message: "Successfully Created Subject",
-        classes,
-        staff,
-        subject,
-        depart,
-      });
+    res.status(200).send({
+      message: "Successfully Created Subject",
+      classes,
+      staff,
+      subject,
+      depart,
+    });
   }
 );
 
@@ -909,6 +1080,34 @@ app.post("/search/insdashboard/studentdata/:sid", async (req, res) => {
   res.status(200).send({ message: "Student Info", student });
 });
 
+app.post(
+  "/search/insdashboard/studentdata/doc/:id",
+  upload.single("file"),
+  async (req, res) => {
+    const sid = req.params.id;
+    const file = req.file;
+    const results = await uploadFile(file);
+    const student = await Student.findById({ _id: sid });
+    student.studentDocuments = results.key;
+    await student.save();
+    await unlinkFile(file.path);
+  }
+);
+
+app.post(
+  "/search/insdashboard/studentdata/adh/:id",
+  upload.single("file"),
+  async (req, res) => {
+    const sid = req.params.id;
+    const file = req.file;
+    const results = await uploadFile(file);
+    const student = await Student.findById({ _id: sid });
+    student.studentAadharCard = results.key;
+    await student.save();
+    await unlinkFile(file.path);
+  }
+);
+
 // Institute Student Approval By Class Teacher
 
 app.post("/ins/:id/student/:cid/approve/:sid", async (req, res) => {
@@ -926,13 +1125,11 @@ app.post("/ins/:id/student/:cid/approve/:sid", async (req, res) => {
   await institute.save();
   await classes.save();
   await student.save();
-  res
-    .status(200)
-    .send({
-      message: `Welcome To The Institute ${student.studentFirstName} ${student.studentLastName}`,
-      institute,
-      classes,
-    });
+  res.status(200).send({
+    message: `Welcome To The Institute ${student.studentFirstName} ${student.studentLastName}`,
+    institute,
+    classes,
+  });
 });
 
 // Staff Data
@@ -1203,11 +1400,9 @@ app.post("/student/:sid/fee/:id", async (req, res) => {
     console.log("includes");
     console.log(fData._id);
     console.log(fData.studentsList);
-    res
-      .status(200)
-      .send({
-        message: `${student.studentFirstName} paid the ${fData.feeName}`,
-      });
+    res.status(200).send({
+      message: `${student.studentFirstName} paid the ${fData.feeName}`,
+    });
   } else {
     student.studentFee.push(fData);
     fData.feeStatus = status;
@@ -1215,13 +1410,11 @@ app.post("/student/:sid/fee/:id", async (req, res) => {
     fData.feeStudent = student;
     await student.save();
     await fData.save();
-    res
-      .status(200)
-      .send({
-        message: `${fData.feeName} received by ${student.studentFirstName}`,
-        fData,
-        student,
-      });
+    res.status(200).send({
+      message: `${fData.feeName} received by ${student.studentFirstName}`,
+      fData,
+      student,
+    });
   }
 });
 
@@ -1237,13 +1430,11 @@ app.post("/class/:cid/student/:sid/behaviour", async (req, res) => {
   await classes.save();
   await student.save();
   await bData.save();
-  res
-    .status(200)
-    .send({
-      message: `${student.studentFirstName}'s Behaviour Report is ${student.studentBehaviourReportStatus}`,
-      classes,
-      bData,
-    });
+  res.status(200).send({
+    message: `${student.studentFirstName}'s Behaviour Report is ${student.studentBehaviourReportStatus}`,
+    classes,
+    bData,
+  });
 });
 
 app.post("/class/:cid/student/:sid/attendence", async (req, res) => {
@@ -1286,13 +1477,11 @@ app.post("/department/:did/staff/attendence", async (req, res) => {
     staffAttendReg.department = department;
     await staffAttendDate.save();
     await staffAttendReg.save();
-    res
-      .status(200)
-      .send({
-        message: "Staff Attendence Register is Ready",
-        staffAttendDate,
-        staffAttendReg,
-      });
+    res.status(200).send({
+      message: "Staff Attendence Register is Ready",
+      staffAttendDate,
+      staffAttendReg,
+    });
   }
 });
 
@@ -1327,14 +1516,12 @@ app.post("/student/:sid/attendence/:aid/present/:rid", async (req, res) => {
       await attendDates.save();
       await student.save();
       await attendReg.save();
-      res
-        .status(200)
-        .send({
-          message: `${student.studentFirstName} is ${req.body.status} on that day`,
-          attendDates,
-          student,
-          attendReg,
-        });
+      res.status(200).send({
+        message: `${student.studentFirstName} is ${req.body.status} on that day`,
+        attendDates,
+        student,
+        attendReg,
+      });
     }
   }
 });
@@ -1370,14 +1557,12 @@ app.post("/student/:sid/attendence/:aid/absent/:rid", async (req, res) => {
       await attendDates.save();
       await student.save();
       await attendReg.save();
-      res
-        .status(200)
-        .send({
-          message: `${student.studentFirstName} is ${req.body.status} on that day`,
-          attendDates,
-          student,
-          attendReg,
-        });
+      res.status(200).send({
+        message: `${student.studentFirstName} is ${req.body.status} on that day`,
+        attendDates,
+        student,
+        attendReg,
+      });
     }
   }
 });
@@ -1413,14 +1598,12 @@ app.post("/staff/:sid/attendence/:aid/present/:rid", async (req, res) => {
       await staffAttendDates.save();
       await staff.save();
       await staffAttendReg.save();
-      res
-        .status(200)
-        .send({
-          message: `${staff.staffFirstName} is ${req.body.status} on that day`,
-          staffAttendDates,
-          staff,
-          staffAttendReg,
-        });
+      res.status(200).send({
+        message: `${staff.staffFirstName} is ${req.body.status} on that day`,
+        staffAttendDates,
+        staff,
+        staffAttendReg,
+      });
     }
   }
 });
@@ -1456,14 +1639,12 @@ app.post("/staff/:sid/attendence/:aid/absent/:rid", async (req, res) => {
       await staffAttendDates.save();
       await staff.save();
       await staffAttendReg.save();
-      res
-        .status(200)
-        .send({
-          message: `${staff.staffFirstName} is ${req.body.status} on that day`,
-          staffAttendDates,
-          staff,
-          staffAttendReg,
-        });
+      res.status(200).send({
+        message: `${staff.staffFirstName} is ${req.body.status} on that day`,
+        staffAttendDates,
+        staff,
+        staffAttendReg,
+      });
     }
   }
 });
@@ -1607,12 +1788,10 @@ app.post("/user-detail/:uid", async (req, res) => {
           channel: "sms",
         })
         .then((data) => {
-          res
-            .status(200)
-            .send({
-              message: "code will be send to registered mobile number",
-              user,
-            });
+          res.status(200).send({
+            message: "code will be send to registered mobile number",
+            user,
+          });
         });
     } else {
       res.send({ message: "User will be verified..." });
@@ -1962,12 +2141,10 @@ app.post("/user/forgot", async (req, res) => {
         channel: "sms",
       })
       .then((data) => {
-        res
-          .status(200)
-          .send({
-            message: "code will be send to registered mobile number",
-            user,
-          });
+        res.status(200).send({
+          message: "code will be send to registered mobile number",
+          user,
+        });
       });
   } else if (institute) {
     client.verify
@@ -1977,12 +2154,10 @@ app.post("/user/forgot", async (req, res) => {
         channel: "sms",
       })
       .then((data) => {
-        res
-          .status(200)
-          .send({
-            message: "code will be send to registered mobile number",
-            institute,
-          });
+        res.status(200).send({
+          message: "code will be send to registered mobile number",
+          institute,
+        });
       });
   } else {
     res.status(200).send({ message: "Invalid Username" });
