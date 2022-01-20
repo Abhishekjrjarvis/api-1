@@ -16,6 +16,8 @@ const MongoStore = require("connect-mongo");
 const { isApproved } = require("./middleware");
 const data = require("./Verify.js");
 const client = require("twilio")(data.ACCOUNTSID, data.AUTHTOKEN);
+const conversationRoute = require("./routes/conversations");
+const messageRoute = require("./routes/messages");
 
 const Admin = require("./models/superAdmin");
 const InstituteAdmin = require("./models/InstituteAdmin");
@@ -111,6 +113,9 @@ app.use(
     },
   })
 );
+
+app.use("/api/conversations", conversationRoute);
+app.use("/api/messages", messageRoute);
 
 // Super Admin Routes
 
@@ -229,7 +234,8 @@ app.post("/admin/:aid/reject/ins/:id", async (req, res) => {
 // Institute Admin Routes
 
 // Institute Creation
-
+//for global user admin "61e6b5542501b28fc6d70450"
+//for local my system "61d83f55f9245740b77ddec3"
 app.post("/ins-register", async (req, res) => {
   const admins = await Admin.findById({ _id: "61e6b5542501b28fc6d70450" });
   const existInstitute = await InstituteAdmin.findOne({ name: req.body.name });
@@ -373,25 +379,29 @@ app.get("/insdashboard", async (req, res) => {
 });
 
 app.get("/insdashboard/:id", async (req, res) => {
-  const { id } = req.params;
-  const institute = await InstituteAdmin.findById({ _id: id })
-    .populate("posts")
-    .populate("announcement")
-    .populate("staff")
-    .populate("ApproveStaff")
-    .populate({
-      path: "depart",
-      populate: {
-        path: "dHead",
-      },
-    })
-    .populate("followers")
-    .populate("following")
-    .populate("classRooms")
-    .populate("student")
-    .populate("ApproveStudent")
-    .populate("userFollowersList");
-  res.status(200).send({ message: "Your Institute", institute });
+  try {
+    const { id } = req.params;
+    const institute = await InstituteAdmin.findById({ _id: id })
+      .populate("posts")
+      .populate("announcement")
+      .populate("staff")
+      .populate("ApproveStaff")
+      .populate({
+        path: "depart",
+        populate: {
+          path: "dHead",
+        },
+      })
+      .populate("followers")
+      .populate("following")
+      .populate("classRooms")
+      .populate("student")
+      .populate("ApproveStudent")
+      .populate("userFollowersList");
+    res.status(200).send({ message: "Your Institute", institute });
+  } catch {
+    console.log("Somthing went wrongs");
+  }
 });
 
 // All Post From Institute
@@ -437,6 +447,7 @@ app.post("/insprofiledisplay/:id", async (req, res) => {
 });
 
 // Institute Profile About Data
+////////////////////////////////////
 
 app.post("/insprofileabout/:id", async (req, res) => {
   const { id } = req.params;
@@ -445,14 +456,17 @@ app.post("/insprofileabout/:id", async (req, res) => {
   institute.insRegDate = req.body.insRegDate;
   institute.insAffiliated = req.body.insAffiliated;
   institute.insAchievement = req.body.insAchievement;
-  institute.insProfilePhoto = req.body.insProfilePhoto;
-  institute.insProfileCoverPhoto = req.body.insProfileCoverPhoto;
   institute.insEditableText = req.body.insEditableText;
   institute.insEditableTexts = req.body.insEditableTexts;
   await institute.save();
   res
     .status(200)
     .send({ message: "Institute Profile About Updated", institute });
+});
+app.get("/insprofileabout/photo/:key", async (req, res) => {
+  const key = req.params.key;
+  const readStream = getFileStream(key);
+  readStream.pipe(res);
 });
 
 app.post(
@@ -463,11 +477,20 @@ app.post(
     const file = req.file;
     const results = await uploadFile(file);
     const institute = await InstituteAdmin.findById({ _id: id });
+    console.log("This is file url: ", results);
     institute.insProfilePhoto = results.key;
     await institute.save();
     await unlinkFile(file.path);
+    res.status(200).send({ message: "Successfully photo change" });
   }
 );
+
+app.get("/insprofileabout/coverphoto/:key", async (req, res) => {
+  const key = req.params.key;
+  const readStream = getFileStream(key);
+  readStream.pipe(res);
+});
+
 app.post(
   "/insprofileabout/coverphoto/:id",
   upload.single("file"),
@@ -479,9 +502,10 @@ app.post(
     institute.insProfileCoverPhoto = results.key;
     await institute.save();
     await unlinkFile(file.path);
+    res.status(200).send({ message: "Successfully cover photo change" });
   }
 );
-
+//////////////////////////////////////////////
 // Institute Announcements Data
 app.post("/ins-announcement/:id", async (req, res) => {
   const { id } = req.params;
@@ -703,6 +727,23 @@ app.post("/ins/:id/staff/approve/:sid", async (req, res) => {
     message: `Welcome To The Institute ${staffs.staffFirstName} ${staffs.staffLastName}`,
     institute,
   });
+});
+
+app.post("/ins/:id/staff/reject/:sid", async (req, res) => {
+  const { id, sid } = req.params;
+  const institute = await InstituteAdmin.findById({ _id: id });
+  const staffs = await Staff.findById({ _id: sid });
+  staffs.staffStatus = req.body.status;
+  // institute.ApproveStaff.push(staffs)
+  institute.staff.splice(sid, 1);
+  await institute.save();
+  await staffs.save();
+  res
+    .status(200)
+    .send({
+      message: `Application Rejected ${staffs.staffFirstName} ${staffs.staffLastName}`,
+      institute,
+    });
 });
 
 // Institute Department Creation
@@ -1130,6 +1171,30 @@ app.post("/ins/:id/student/:cid/approve/:sid", async (req, res) => {
     institute,
     classes,
   });
+});
+
+app.post("/ins/:id/student/:cid/reject/:sid", async (req, res) => {
+  const { id, sid, cid } = req.params;
+  const institute = await InstituteAdmin.findById({ _id: id });
+  const student = await Student.findById({ _id: sid });
+  const classes = await Class.findById({ _id: cid });
+  student.studentStatus = req.body.status;
+  // institute.ApproveStudent.push(student)
+  institute.student.splice(sid, 1);
+  // classes.ApproveStudent.push(student)
+  classes.student.splice(sid, 1);
+  // student.studentGRNO = classes.ApproveStudent.length
+  // console.log(student)
+  await institute.save();
+  await classes.save();
+  await student.save();
+  res
+    .status(200)
+    .send({
+      message: `Application Rejected ${student.studentFirstName} ${student.studentLastName}`,
+      institute,
+      classes,
+    });
 });
 
 // Staff Data
@@ -1923,6 +1988,8 @@ app.post("/userdashboard/:id/user-post", async (req, res) => {
   res.status(200).send({ message: "Post Successfully Created", user });
 });
 
+////////////////////////////
+
 app.post("/userprofileabout/:id", async (req, res) => {
   const { id } = req.params;
   const user = await User.findById({ _id: id });
@@ -1932,13 +1999,51 @@ app.post("/userprofileabout/:id", async (req, res) => {
   user.userCountry = req.body.userCountry;
   user.userHobbies = req.body.userHobbies;
   user.userEducation = req.body.userEducation;
-  user.userProfilePhoto = req.body.userProfilePhoto;
-  user.userProfilePhotoPath = req.body.userProfilePhotoPath;
-  user.userProfileCoverPhoto = req.body.userProfileCoverPhoto;
-  user.userProfileCoverPhotoPath = req.body.userProfileCoverPhotoPath;
   await user.save();
   res.status(200).send({ message: "About Updated", user });
 });
+app.get("/userprofileabout/photo/:key", async (req, res) => {
+  const key = req.params.key;
+  const readStream = getFileStream(key);
+  readStream.pipe(res);
+});
+
+app.post(
+  "/userprofileabout/photo/:id",
+  upload.single("file"),
+  async (req, res) => {
+    const { id } = req.params;
+    const file = req.file;
+    const results = await uploadFile(file);
+    const user = await User.findById({ _id: id });
+    user.profilePhoto = results.key;
+    await user.save();
+    await unlinkFile(file.path);
+    res.status(200).send({ message: "Successfully photo change" });
+  }
+);
+app.get("/userprofileabout/coverphoto/:key", async (req, res) => {
+  const key = req.params.key;
+  const readStream = getFileStream(key);
+  readStream.pipe(res);
+});
+
+app.post(
+  "/userprofileabout/coverphoto/:id",
+  upload.single("file"),
+  async (req, res) => {
+    const { id } = req.params;
+    const file = req.file;
+    const results = await uploadFile(file);
+    const user = await User.findById({ _id: id });
+    user.profileCoverPhoto = results.key;
+    await user.save();
+    await unlinkFile(file.path);
+    res.status(200).send({ message: "Successfully cover photo change" });
+  }
+);
+
+////////////////////////////////
 
 app.post("/user/post/like", async (req, res) => {
   const { postId } = req.body;
@@ -2091,14 +2196,24 @@ app.put("/user/circle-ins", async (req, res) => {
   ) {
     res.status(200).send({ message: "You are Already In a Circle" });
   } else {
-    const userFo = await User.findById({ _id: req.session.userAddress._id });
-    const userFl = await User.findById({ _id: req.body.followId });
-    userFo.followers.splice(userFl._id, 1);
-    userFo.following.splice(userFl._id, 1);
-    userFl.followers.splice(userFo._id, 1);
-    userFl.following.splice(userFo._id, 1);
-    await userFo.save();
-    await userFl.save();
+    const newConversation = new Conversation({
+      members: [req.session.user._id, req.body.followId],
+    });
+    try {
+      const savedConversation = await newConversation.save();
+      res.status(200).json(savedConversation);
+    } catch (err) {
+      res.status(500).json(err);
+    }
+    // const userFo = await User.findById({_id: req.session.user._id})
+    // const userFl = await User.findById({_id: req.body.followId})
+    // console.log(userFo._id, userFl._id)
+    // userFo.Followers.splice(req.body.followId, 1)
+    // userFo.Following.splice(req.body.followId, 1)
+    // userFl.Followers.splice(req.session.user._id, 1)
+    // userFl.Following.splice(req.session.user._id, 1)
+    // await userFo.save()
+    // await userFl.save()
 
     const user = await User.findByIdAndUpdate(
       req.body.followId,

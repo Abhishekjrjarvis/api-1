@@ -25,9 +25,7 @@ const userSchema = new mongoose.Schema({
   userEducation: { type: String },
   referalPercentage: { type: String },
   profilePhoto: { type: String },
-  profilePhotoPath: { type: String },
   profileCoverPhoto: { type: String },
-  profileCoverPhotoPath: { type: String },
   userPosts: [
     {
       type: mongoose.Schema.Types.ObjectId,
