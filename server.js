@@ -279,6 +279,7 @@ app.post("/ins-register/doc/:id", upload.single("file"), async (req, res) => {
   await institute.save();
   await unlinkFile(file.path);
   // res.send({ message: "Uploaded" });
+  res.status(200).send({ message: "Uploaded" });
 });
 
 // Create Institute Password
@@ -635,6 +636,7 @@ app.post(
     staff.staffDocuments = results.key;
     await staff.save();
     await unlinkFile(file.path);
+    res.status(200).send({ message: "Uploaded" });
   }
 );
 app.post(
@@ -648,6 +650,7 @@ app.post(
     staff.staffAadharCard = results.key;
     await staff.save();
     await unlinkFile(file.path);
+    res.status(200).send({ message: "Uploaded" });
   }
 );
 // Institute Post For Like
@@ -1132,6 +1135,7 @@ app.post(
     student.studentDocuments = results.key;
     await student.save();
     await unlinkFile(file.path);
+    res.status(200).send({ message: "Uploaded" });
   }
 );
 
@@ -1146,6 +1150,7 @@ app.post(
     student.studentAadharCard = results.key;
     await student.save();
     await unlinkFile(file.path);
+    res.status(200).send({ message: "Uploaded" });
   }
 );
 
