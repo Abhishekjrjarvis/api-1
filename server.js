@@ -278,6 +278,7 @@ app.post("/ins-register/doc/:id", upload.single("file"), async (req, res) => {
   // );
   await institute.save();
   await unlinkFile(file.path);
+
   res.status(200).send({ message: "Uploaded" });
 });
 
