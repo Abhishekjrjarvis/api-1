@@ -1,6 +1,7 @@
 const mongoose = require('mongoose')
 const Class = require('./Class')
 const Department = require('./Department')
+const Student = require('./Student')
 
 const checklistSchema = new mongoose.Schema({
     checklistName: {
@@ -26,6 +27,16 @@ const checklistSchema = new mongoose.Schema({
     createdAt: {
         type: Date,
         default: Date.now
+    },
+    student: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Student'
+        }
+    ],
+    studentAssignedStatus: {
+        type: String,
+        default: 'Not Assigned'
     }
 })
 

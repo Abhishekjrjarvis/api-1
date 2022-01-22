@@ -234,10 +234,10 @@ app.post("/admin/:aid/reject/ins/:id", async (req, res) => {
 // Institute Admin Routes
 
 // Institute Creation
-//for global user admin "61e6b5542501b28fc6d70450"
+//for global user admin "61e96ed24b9172ff5234ba3e"
 //for local my system "61d83f55f9245740b77ddec3"
 app.post("/ins-register", async (req, res) => {
-  const admins = await Admin.findById({ _id: "61e6b5542501b28fc6d70450" });
+  const admins = await Admin.findById({ _id: "61e96ed24b9172ff5234ba3e" });
   const existInstitute = await InstituteAdmin.findOne({ name: req.body.name });
   const existAdmin = await Admin.findOne({ adminUserName: req.body.name });
   const existUser = await User.findOne({ username: req.body.name });
@@ -278,7 +278,7 @@ app.post("/ins-register/doc/:id", upload.single("file"), async (req, res) => {
   // );
   await institute.save();
   await unlinkFile(file.path);
-  // res.send({ message: "Uploaded" });
+  res.status(200).send({ message: "Uploaded" });
 });
 
 // Create Institute Password
@@ -635,6 +635,7 @@ app.post(
     staff.staffDocuments = results.key;
     await staff.save();
     await unlinkFile(file.path);
+    res.status(200).send({ message: "Uploaded" });
   }
 );
 app.post(
@@ -648,6 +649,7 @@ app.post(
     staff.staffAadharCard = results.key;
     await staff.save();
     await unlinkFile(file.path);
+    res.status(200).send({ message: "Uploaded" });
   }
 );
 // Institute Post For Like
@@ -738,12 +740,10 @@ app.post("/ins/:id/staff/reject/:sid", async (req, res) => {
   institute.staff.splice(sid, 1);
   await institute.save();
   await staffs.save();
-  res
-    .status(200)
-    .send({
-      message: `Application Rejected ${staffs.staffFirstName} ${staffs.staffLastName}`,
-      institute,
-    });
+  res.status(200).send({
+    message: `Application Rejected ${staffs.staffFirstName} ${staffs.staffLastName}`,
+    institute,
+  });
 });
 
 // Institute Department Creation
@@ -1132,6 +1132,7 @@ app.post(
     student.studentDocuments = results.key;
     await student.save();
     await unlinkFile(file.path);
+    res.status(200).send({ message: "Uploaded" });
   }
 );
 
@@ -1146,6 +1147,7 @@ app.post(
     student.studentAadharCard = results.key;
     await student.save();
     await unlinkFile(file.path);
+    res.status(200).send({ message: "Uploaded" });
   }
 );
 
@@ -1188,13 +1190,11 @@ app.post("/ins/:id/student/:cid/reject/:sid", async (req, res) => {
   await institute.save();
   await classes.save();
   await student.save();
-  res
-    .status(200)
-    .send({
-      message: `Application Rejected ${student.studentFirstName} ${student.studentLastName}`,
-      institute,
-      classes,
-    });
+  res.status(200).send({
+    message: `Application Rejected ${student.studentFirstName} ${student.studentLastName}`,
+    institute,
+    classes,
+  });
 });
 
 // Staff Data
@@ -1260,7 +1260,8 @@ app.get("/studentdesignationdata/:sid", async (req, res) => {
     .populate({
       path: "user",
     })
-    .populate("studentFee");
+    .populate("studentFee")
+    .populate("checklist");
   // .populate('studentAttendence')
   res.status(200).send({ message: "Student Designation Data", student });
 });
@@ -1502,10 +1503,11 @@ app.post("/class/:cid/student/:sid/behaviour", async (req, res) => {
   });
 });
 
-app.post("/class/:cid/student/:sid/attendence", async (req, res) => {
+app.post("/class/:cid/student/attendence", async (req, res) => {
   const { cid, sid } = req.params;
+  // console.log(req.params, req.body)
   const dLeave = await Holiday.findOne({
-    dDate: { $gte: `${req.body.attendDate}` },
+    dDate: { $eq: `${req.body.attendDate}` },
   });
   if (dLeave) {
     res
@@ -1528,7 +1530,7 @@ app.post("/class/:cid/student/:sid/attendence", async (req, res) => {
 app.post("/department/:did/staff/attendence", async (req, res) => {
   const { did } = req.params;
   const dLeaves = await Holiday.findOne({
-    dDate: { $gte: `${req.body.staffAttendDate}` },
+    dDate: { $eq: `${req.body.staffAttendDate}` },
   });
   if (dLeaves) {
     res
@@ -1803,22 +1805,46 @@ app.post("/department/holiday/:did", async (req, res) => {
   const { did } = req.params;
   const { dateStatus } = req.body;
   const depart = await Department.findById({ _id: did });
-  const leave = await new Holiday({
-    dDate: dateStatus,
-    dHolidayReason: req.body.dateData.dHolidayReason,
+  const staffDate = await StaffAttendenceDate.findOne({
+    staffAttendDate: { $eq: `${dateStatus}` },
   });
-  depart.holiday.push(leave);
-  leave.department = depart;
-  await depart.save();
-  await leave.save();
-  res.status(200).send({ message: "Holiday Marked ", leave, depart });
+  const classDate = await AttendenceDate.findOne({
+    attendDate: { $eq: `${dateStatus}` },
+  });
+  if (staffDate && staffDate !== "undefined") {
+    res.status(200).send({ message: "Count as a no holiday", staffDate });
+  } else if (classDate && classDate !== "undefined") {
+    res.status(200).send({ message: "Count as a no holiday", classDate });
+  } else {
+    const leave = await new Holiday({
+      dDate: dateStatus,
+      dHolidayReason: req.body.dateData.dHolidayReason,
+    });
+    depart.holiday.push(leave);
+    leave.department = depart;
+    await depart.save();
+    await leave.save();
+    res.status(200).send({ message: "Holiday Marked ", leave, depart });
+  }
 });
 
+app.post("/student/:sid/checklist/:cid", async (req, res) => {
+  const { sid, cid } = req.params;
+  const student = await Student.findById({ _id: sid });
+  const checklist = await Checklist.findById({ _id: cid });
+  student.checklist.push(checklist);
+  student.checklistAllottedStatus = "Allotted";
+  checklist.student.push(student);
+  checklist.studentAssignedStatus = "Assigned";
+  await student.save();
+  await checklist.save();
+  res.status(200).send({ message: "checklist Assigned", student, checklist });
+});
 // End User Routes
 
 app.post("/user-register", async (req, res) => {
   const { username } = req.body;
-  const admins = await Admin.findById({ _id: "61e6b5542501b28fc6d70450" });
+  const admins = await Admin.findById({ _id: "61e96ed24b9172ff5234ba3e" });
   const existAdmin = await Admin.findOne({ adminUserName: username });
   const existInstitute = await InstituteAdmin.findOne({ name: username });
   const existUser = await User.findOne({ username: username });
@@ -1907,10 +1933,8 @@ app.post("/profile-creation/:id", async (req, res) => {
   user.userAddress = userAddress;
   user.userBio = userBio;
   user.userDateOfBirth = userDateOfBirth;
-  user.userProfilePhoto = userProfilePhoto;
-  user.userProfilePhotoPath = userProfilePhotoPath;
-  user.userProfileCoverPhoto = userProfileCoverPhoto;
-  user.userProfileCoverPhotoPath = userProfileCoverPhotoPath;
+  user.profilePhoto = userProfilePhoto;
+  user.profileCoverPhoto = userProfileCoverPhoto;
   await user.save();
   res.status(200).send({ message: "Profile Successfully Created...", user });
 });
