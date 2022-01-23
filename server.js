@@ -447,6 +447,11 @@ app.post("/insprofiledisplay/:id", async (req, res) => {
   // }
 });
 
+app.get("/allstaff", async (req, res) => {
+  const staff = await Staff.find({});
+  res.status(200).send({ message: "staff data", staff });
+});
+
 // Institute Profile About Data
 ////////////////////////////////////
 
@@ -1992,7 +1997,13 @@ app.get("/userdashboard/:id", async (req, res) => {
     .populate("userCircle")
     .populate("InstituteReferals")
     .populate("userInstituteFollowing")
-    .populate("announcement");
+    .populate("announcement")
+    .populate({
+      path: "student",
+      populate: {
+        path: "studentClass",
+      },
+    });
   res.status(200).send({ message: "Your User", user });
 });
 
