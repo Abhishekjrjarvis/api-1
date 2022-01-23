@@ -103,6 +103,7 @@ app.use(cookieParser());
 app.use(
   session({
     name: "SessionID",
+    store,
     secret,
     resave: false,
     saveUninitialized: false,
