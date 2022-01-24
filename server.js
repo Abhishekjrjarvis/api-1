@@ -238,7 +238,7 @@ app.post("/admin/:aid/reject/ins/:id", async (req, res) => {
 //for global user admin "61e96ed24b9172ff5234ba3e"
 //for local my system "61d83f55f9245740b77ddec3"
 app.post("/ins-register", async (req, res) => {
-  const admins = await Admin.findById({ _id: "61d83f55f9245740b77ddec3" });
+  const admins = await Admin.findById({ _id: "61e96ed24b9172ff5234ba3e" });
   const existInstitute = await InstituteAdmin.findOne({ name: req.body.name });
   const existAdmin = await Admin.findOne({ adminUserName: req.body.name });
   const existUser = await User.findOne({ username: req.body.name });
@@ -2037,7 +2037,7 @@ app.post("/student/:sid/checklist/:cid", async (req, res) => {
 
 app.post("/user-register", async (req, res) => {
   const { username } = req.body;
-  const admins = await Admin.findById({ _id: "61d83f55f9245740b77ddec3" });
+  const admins = await Admin.findById({ _id: "61e96ed24b9172ff5234ba3e" });
   const existAdmin = await Admin.findOne({ adminUserName: username });
   const existInstitute = await InstituteAdmin.findOne({ name: username });
   const existUser = await User.findOne({ username: username });
