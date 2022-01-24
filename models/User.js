@@ -26,6 +26,8 @@ const userSchema = new mongoose.Schema({
   referalPercentage: { type: String },
   profilePhoto: { type: String },
   profileCoverPhoto: { type: String },
+  photoId: { type: String },
+  coverId: { type: String },
   userPosts: [
     {
       type: mongoose.Schema.Types.ObjectId,

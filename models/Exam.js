@@ -9,28 +9,43 @@ const Checklist = require('./Checklist')
 
 const examSchema = new mongoose.Schema({
     
+    examType: { type: String, required: true },
+    examName: { type: String, required: true },
+    examMode: { type: String, required: true },
     institute: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'InstituteAdmin'
+        ref: 'InstituteAdmin',
+        require: true
     },
     batch: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Batch'
+        ref: 'Batch',
+        require: true
     },
-    examName: { type: String, required: true },
-    examType: { type: Number, required: true },
-    examDate: { type: Date, required: true },
-    examWeight: {type : Number, required: true },
+    examForDepartment: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Department",
+        
+    },
     examForClass: { 
             type: mongoose.Schema.Types.ObjectId, 
-            ref: 'Class' 
+            ref: 'Class',
+            require: true
         },
-    subject: {
+        subject: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Subject'
         },
-})      
-
-const Exam = mongoose.model('Exam', examSchema)
-
+        subTeacher: {
+            type: mongoose.Schema.Types.ObjectId,
+            required: true
+        },
+        examDate: { type: Date, required: true },
+        examTime: { type: String, required: true },
+        examWeight: {type : Number, required: true },
+        totalMarks: {type : Number, required: true },
+    })      
+    
+    const Exam = mongoose.model('Exam', examSchema)
+    
 module.exports = Exam

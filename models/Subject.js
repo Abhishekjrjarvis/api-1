@@ -17,6 +17,12 @@ const subjectSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId, 
         ref: 'Staff'
     },
+    subjectExams: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Exam'
+        }
+    ],
     class: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Class'

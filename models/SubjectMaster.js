@@ -1,6 +1,6 @@
 const mongoose = require('mongoose')
 
-
+const Subject = require('./Subject')
 const InstituteAdmin = require('./InstituteAdmin')
 
 const subjectMasterSchema = new mongoose.Schema({
@@ -9,6 +9,12 @@ const subjectMasterSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'InstituteAdmin'
     },
+    subjects: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Subject'
+        }
+    ]
 })      
 
 const SubjectMaster = mongoose.model('SubjectMaster', subjectMasterSchema)

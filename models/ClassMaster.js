@@ -10,7 +10,12 @@ const classMasterSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'InstituteAdmin'
     },
-    classDivision: { type: Number, default: 0 }
+    classDivision: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Subject'
+        }
+    ]
 })      
 
 const ClassMaster = mongoose.model('ClassMaster', classMasterSchema)

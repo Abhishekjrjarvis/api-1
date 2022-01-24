@@ -37,6 +37,8 @@ const instituteAdminSchema = new mongoose.Schema({
   referalStatus: { type: String, default: "Pending" },
   insProfilePhoto: { type: String },
   insProfileCoverPhoto: { type: String },
+  photoId: { type: String },
+  coverId: { type: String },
   posts: [
     {
       type: mongoose.Schema.Types.ObjectId,

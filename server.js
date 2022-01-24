@@ -238,7 +238,7 @@ app.post("/admin/:aid/reject/ins/:id", async (req, res) => {
 //for global user admin "61e96ed24b9172ff5234ba3e"
 //for local my system "61d83f55f9245740b77ddec3"
 app.post("/ins-register", async (req, res) => {
-  const admins = await Admin.findById({ _id: "61e96ed24b9172ff5234ba3e" });
+  const admins = await Admin.findById({ _id: "61d83f55f9245740b77ddec3" });
   const existInstitute = await InstituteAdmin.findOne({ name: req.body.name });
   const existAdmin = await Admin.findOne({ adminUserName: req.body.name });
   const existUser = await User.findOne({ username: req.body.name });
@@ -251,7 +251,9 @@ app.post("/ins-register", async (req, res) => {
       res.send({ message: "Institute Existing with this Username" });
     } else {
       const institute = await new InstituteAdmin({ ...req.body });
-      console.log(institute);
+      institute.photoId = "1";
+      institute.coverId = "2";
+      // console.log(institute);
       admins.instituteList.push(institute);
       await admins.save();
       await institute.save();
@@ -484,8 +486,10 @@ app.post(
     const file = req.file;
     const results = await uploadFile(file);
     const institute = await InstituteAdmin.findById({ _id: id });
-    console.log("This is file url: ", results);
+    // console.log("This is file url: ", results);
     institute.insProfilePhoto = results.key;
+    institute.photoId = "0";
+
     await institute.save();
     await unlinkFile(file.path);
     res.status(200).send({ message: "Successfully photo change" });
@@ -507,6 +511,7 @@ app.post(
     const results = await uploadFile(file);
     const institute = await InstituteAdmin.findById({ _id: id });
     institute.insProfileCoverPhoto = results.key;
+    institute.coverId = "0";
     await institute.save();
     await unlinkFile(file.path);
     res.status(200).send({ message: "Successfully cover photo change" });
@@ -965,6 +970,116 @@ app.post("/ins/:id/department/:did/batch/:bid", async (req, res) => {
   });
 });
 
+////////////////////////////////
+
+// Get all Exam Data
+app.get("/exam/batch/:did", async (req, res) => {
+  const { did } = req.params;
+  const exams = await Exam.find({ examForDepartment: did })
+    .populate("examForClass")
+    .populate("subject")
+    .populate("subTeacher");
+
+  res.status(200).send({ message: "All Exam Data", exams });
+});
+
+// Get all Exam From Subject
+app.get("/exam/subject/:suid", async (req, res) => {
+  const { suid } = req.params;
+
+  const subject = await Subject.findById({ _id: suid }).populate({
+    path: "subjectExams",
+  });
+  const subExamList = subject.subjectExams;
+
+  res.status(200).send({ message: "Subject Exam List", subExamList });
+});
+
+app.post(
+  "/ins/:id/department/function/examcreation/:did/batch/:bid/",
+  async (req, res) => {
+    const { id, did, bid } = req.params;
+    const {
+      suid,
+      cid,
+      examName,
+      examType,
+      examMode,
+      examWeight,
+      examDate,
+      examTime,
+      totalMarks,
+    } = req.body;
+    const institute = await InstituteAdmin.findById({ _id: id });
+    const batch = await Batch.findById({ _id: bid });
+    const subject = await Subject.findById({ _id: suid });
+    const depart = await Department.findById({ _id: did });
+    const classRoom = await Class.findById({ _id: cid });
+
+    const newExam = await new Exam({
+      institute: id,
+      batch: batch,
+      examType: examType,
+      examName: examName,
+      examMode: examMode,
+      examWeight: examWeight,
+      examDate: examDate,
+      examTime: examTime,
+      examForClass: cid,
+      examForDepartment: depart,
+      totalMarks: totalMarks,
+      subject: suid,
+      subTeacher: subject.subjectTeacherName,
+    });
+
+    await newExam.save();
+    console.log(newExam, "Exam Was Saved");
+    subject.subjectExams.push(newExam);
+    batch.batchExam.push(newExam);
+    classRoom.classExam.push(newExam);
+    depart.departmentExam.push(newExam);
+    await batch.save();
+    await subject.save();
+    await classRoom.save();
+    await depart.save();
+    res.status(200).send({ message: "Successfully Created Exam", newExam });
+  }
+);
+
+// Code Fr Get Subject and class Details
+
+app.get("/subject-detail/:suid", async (req, res) => {
+  const { suid } = req.params;
+  const subData = await Subject.findById({ _id: suid }).populate("class");
+  let classId = subData.class._id;
+  classData = await Class.findById({ _id: classId }).populate("ApproveStudent");
+  res
+    .status(200)
+    .send({ message: " Subject & class Data", subData, classData });
+});
+
+// Marks Submit and Save of Student
+
+app.post("/student/marks/", async (req, res) => {
+  console.log("Data Recived");
+  const { examId, totalMarks, obtainedMarks, studentId } = req.body;
+
+  console.log(examId, totalMarks, obtainedMarks, studentId);
+  const student = await Student.findById({ _id: studentId });
+
+  const examMarks = {
+    examId: examId,
+    examTotalMarks: totalMarks,
+    examObtainMarks: obtainedMarks,
+  };
+  console.log(examMarks);
+  student.sudentMarks.push(examMarks);
+  await student.save();
+  console.log(examMarks);
+  res.status(200).send({ message: "Successfully Marks Save" });
+  console.log("send Responce Successfull");
+});
+
 ///////////////////////////////////////////////////////
 
 // app.post("/ins/:id/department/:did/batch/:bid", async (req, res) => {
@@ -1202,6 +1317,77 @@ app.post("/ins/:id/student/:cid/reject/:sid", async (req, res) => {
     institute,
     classes,
   });
+});
+
+// Get all department Batch class Data & Subject
+app.get("/ins/:id/allclassdata/:did/batch/:bid", async (req, res) => {
+  const { id, did, bid } = req.params;
+  const classroom = await Class.find({ batch: bid }).populate({
+    path: "subject",
+  });
+
+  let row = classroom.length;
+  let subject = [];
+
+  for (let i = 0; i < row; i++) {
+    let d = classroom[i].subject;
+    for (let n = 0; n < d.length; n++) {
+      let b = classroom[i].subject[n];
+      subject.push(b);
+    }
+  }
+  res.status(200).send({
+    message: "All Department class and Subject data",
+    classroom,
+    subject,
+  });
+});
+
+// get all Master Subject Data
+
+app.get("/ins/:id/departmentmastersubject/", async (req, res) => {
+  const { id } = req.params;
+  const subjectMaster = await SubjectMaster.find({ institute: id });
+  res.status(200).send({ message: "SubjectMaster Are here", subjectMaster });
+});
+
+// Create Master Subject data
+app.post(
+  "/ins/:id/departmentmastersubject/:did/batch/:bid",
+  async (req, res) => {
+    const { id } = req.params;
+    const { subjectName } = req.body;
+    const institute = await InstituteAdmin.findById({ _id: id });
+    const subjectMaster = await new SubjectMaster({
+      subjectName: subjectName,
+      institute: institute._id,
+    });
+    await subjectMaster.save();
+    res
+      .status(200)
+      .send({ message: "Successfully Created Master Subject", subjectMaster });
+  }
+);
+
+// Get all Exam From a Class
+
+app.get("/exam/class/:cid", async (req, res) => {
+  const { cid } = req.params;
+
+  const classroom = await Class.findById({ _id: cid }).populate({
+    path: "classExam",
+  });
+  const classExamList = classroom.classExam;
+
+  res.status(200).send({ message: "Classroom Exam List", classExamList });
+});
+
+app.get("/exam/:eid", async (req, res) => {
+  const { eid } = req.params;
+  const exam = await Exam.findById({ _id: eid }).populate({
+    path: "examForClass",
+  });
+  res.status(200).send({ message: " exam data", exam });
 });
 
 // Staff Data
@@ -1851,7 +2037,7 @@ app.post("/student/:sid/checklist/:cid", async (req, res) => {
 
 app.post("/user-register", async (req, res) => {
   const { username } = req.body;
-  const admins = await Admin.findById({ _id: "61e96ed24b9172ff5234ba3e" });
+  const admins = await Admin.findById({ _id: "61d83f55f9245740b77ddec3" });
   const existAdmin = await Admin.findOne({ adminUserName: username });
   const existInstitute = await InstituteAdmin.findOne({ name: username });
   const existUser = await User.findOne({ username: username });
@@ -1922,17 +2108,8 @@ app.get("/profile-creation", (req, res) => {
 
 app.post("/profile-creation/:id", async (req, res) => {
   const { id } = req.params;
-  const {
-    userLegalName,
-    userGender,
-    userAddress,
-    userBio,
-    userDateOfBirth,
-    userProfilePhoto,
-    userProfilePhotoPath,
-    userProfileCoverPhoto,
-    userProfileCoverPhotoPath,
-  } = req.body;
+  const { userLegalName, userGender, userAddress, userBio, userDateOfBirth } =
+    req.body;
   console.log(req.body);
   const user = await User.findById({ _id: id });
   user.userLegalName = userLegalName;
@@ -1940,8 +2117,9 @@ app.post("/profile-creation/:id", async (req, res) => {
   user.userAddress = userAddress;
   user.userBio = userBio;
   user.userDateOfBirth = userDateOfBirth;
-  user.profilePhoto = userProfilePhoto;
-  user.profileCoverPhoto = userProfileCoverPhoto;
+  user.photoId = "1";
+  user.coverId = "2";
+
   await user.save();
   res.status(200).send({ message: "Profile Successfully Created...", user });
 });
@@ -2052,8 +2230,10 @@ app.post(
     const { id } = req.params;
     const file = req.file;
     const results = await uploadFile(file);
+    console.log("Uploaded photo in aws");
     const user = await User.findById({ _id: id });
     user.profilePhoto = results.key;
+    user.photoId = "0";
     await user.save();
     await unlinkFile(file.path);
     res.status(200).send({ message: "Successfully photo change" });
@@ -2074,6 +2254,8 @@ app.post(
     const results = await uploadFile(file);
     const user = await User.findById({ _id: id });
     user.profileCoverPhoto = results.key;
+    user.coverId = "0";
+
     await user.save();
     await unlinkFile(file.path);
     res.status(200).send({ message: "Successfully cover photo change" });

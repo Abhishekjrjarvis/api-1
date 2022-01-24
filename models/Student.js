@@ -6,7 +6,7 @@ const Subject = require('./Subject')
 const Fees = require('./Fees')
 const AttendenceDate = require('./AttendenceDate')
 const Attendence = require('./Attendence')
-const Checklist = require('./Checklist')
+const Exam = require('./Exam')
 
 const studentSchema = new mongoose.Schema({
     studentCode: { type: String },
@@ -34,13 +34,6 @@ const studentSchema = new mongoose.Schema({
     studentStatus: { type: String, default: "Not Approved" },
     studentBehaviourReportStatus: { type: String, default: "Not Ready"},
     studentGRNO: { type: String },
-    studentReason: { type: String },
-    studentCertificateDate: { type: String },
-    studentLeavingInsDate: { type: String },
-    studentLeavingRemark: { type: String },
-    studentLeavingBehaviour: { type : String },
-    studentLeavingStudy: { type: String },
-    studentLeavingReason: { type: String },
     studentClass:{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Class'
@@ -53,6 +46,20 @@ const studentSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId, 
         ref: 'InstituteAdmin'
     },
+    sudentMarks: [
+                    {
+                        "examId": {
+                        "type": mongoose.Schema.Types.ObjectId,
+                        ref: 'Exam'
+                        },
+                        "examTotalMarks": {
+                        "type": "Number"
+                        },
+                        "examObtainMarks": {
+                        "type": "Number"
+                        },
+                    }
+    ],
     studentFee: [
         {
             type: mongoose.Schema.Types.ObjectId,
@@ -68,16 +75,6 @@ const studentSchema = new mongoose.Schema({
     attendenceReg: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Attendence'
-    },
-    checklist: [
-        {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Checklist'
-        }
-    ],
-    checklistAllottedStatus: {
-        type: String, 
-        default: 'Not Allotted'
     }
 
 })

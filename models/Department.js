@@ -38,6 +38,12 @@ const departmentSchema = new mongoose.Schema({
             ref: 'Batch'
         }
     ],
+    departmentExam: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Exam'
+        }
+    ],
     checklists: [
         {
             type: mongoose.Schema.Types.ObjectId,
