@@ -43,6 +43,7 @@ const UserAnnouncement = require("./models/UserAnnouncement");
 const SubjectMaster = require("./models/SubjectMaster");
 const ClassMaster = require("./models/ClassMaster");
 const Exam = require("./models/Exam");
+const Conversation = require("./models/Conversation");
 const Holiday = require("./models/Holiday");
 const multer = require("multer");
 const upload = multer({ dest: "uploads/" });
