@@ -10,6 +10,7 @@ const StaffAttendence = require("./StaffAttendence");
 const staffSchema = new mongoose.Schema({
   staffCode: { type: String },
   staffProfilePhoto: { type: String },
+  photoId: { type: String },
   staffFirstName: { type: String },
   staffMiddleName: { type: String },
   staffLastName: { type: String },

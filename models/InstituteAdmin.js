@@ -29,7 +29,6 @@ const instituteAdminSchema = new mongoose.Schema({
   insTrusty: { type: String },
   insEstdDate: { type: Date },
   // insRegNumber: { type: Number, required: true, unique: true },
-  insRegDate: { type: Date },
   insAchievement: { type: String },
   insAffiliated: { type: String },
   referalPercentage: { type: String },
@@ -39,6 +38,7 @@ const instituteAdminSchema = new mongoose.Schema({
   insProfileCoverPhoto: { type: String },
   photoId: { type: String },
   coverId: { type: String },
+  createdAt: { type: Date, default: Date.now },
   posts: [
     {
       type: mongoose.Schema.Types.ObjectId,
