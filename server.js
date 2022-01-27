@@ -286,7 +286,7 @@ app.post("/ins-register/doc/:id", upload.single("file"), async (req, res) => {
 // Create Institute Password
 app.post("/create-password/:id", async (req, res) => {
   const { id } = req.params;
-  console.log(id);
+  // console.log(id);
   const { insPassword, insRePassword } = req.body;
   const institute = await InstituteAdmin.findById({ _id: id });
   const genPass = await bcrypt.genSaltSync(12);
@@ -373,7 +373,7 @@ app.post("/ins-login", async (req, res) => {
 app.get("/ins-logout", (req, res) => {
   res.clearCookie("SessionID", { path: "/" });
   res.status(200).send({ message: "Successfully Logout" });
-  console.log("Session Timed Out");
+  // console.log("Session Timed Out");
 });
 
 // Get All Data From Institute Collections
@@ -734,7 +734,7 @@ app.post("/post/like", isLoggedIn, async (req, res) => {
       post.insLike.length >= 1 &&
       post.insLike.includes(String(institute_session._id))
     ) {
-      console.log("You already liked it");
+      // console.log("You already liked it");
     } else {
       post.insLike.push(institute_session._id);
       await post.save();
@@ -745,7 +745,7 @@ app.post("/post/like", isLoggedIn, async (req, res) => {
       post.insUserLike.length >= 1 &&
       post.insUserLike.includes(String(user_session._id))
     ) {
-      console.log("You already liked it user");
+      // console.log("You already liked it user");
     } else {
       post.insUserLike.push(user_session._id);
       await post.save();
@@ -780,7 +780,7 @@ app.post("/post/comments/:id", async (req, res) => {
   }
   post.comment.push(comment);
   comment.post = post;
-  console.log(comment);
+  // console.log(comment);
   await post.save();
   await comment.save();
   res.status(200).send({ message: "Successfully Commented", post });
@@ -872,27 +872,10 @@ app.put("/follow-ins", async (req, res) => {
   if (institutes.following.includes(req.body.followId)) {
     res.status(200).send({ message: "You Already Following This Institute" });
   } else {
-    const institute = await InstituteAdmin.findByIdAndUpdate(
-      req.body.followId,
-      { $push: { followers: req.session.institute._id } },
-      { new: true },
-      (data, err) => {
-        if (err) {
-          console.log("Something Went Wrong");
-        }
-        InstituteAdmin.findByIdAndUpdate(
-          req.session.institute._id,
-          { $push: { following: req.body.followId } },
-          { new: true }
-        )
-          .then((data) => {
-            res.status(200).send({ message: "Follow", data });
-          })
-          .catch((e) => {
-            console.log("Something Went Wrong");
-          });
-      }
-    );
+    sinstitute.followers.push(req.session.institute._id);
+    institutes.following.push(req.body.followId);
+    await sinstitute.save();
+    await institutes.save();
   }
   // }
 });
@@ -929,12 +912,12 @@ app.get("/batch/class/:bid", async (req, res) => {
 
 app.post("/addbatch/:did", isLoggedIn, async (req, res) => {
   const { did } = req.params;
-  console.log(req.body);
+  // console.log(req.body);
   const department = await Department.findById({ _id: did });
   const batch = await new Batch({ ...req.body });
   department.batches.push(batch);
   batch.department = department;
-  console.log(batch);
+  // console.log(batch);
   await department.save();
   await batch.save();
   res.status(200).send({ message: "batch data", batch });
@@ -1019,7 +1002,7 @@ app.post(
     batch.classroom.push(classRoom);
     masterClass.classDivision.push(classRoom);
     if (String(depart.dHead._id) == String(staff._id)) {
-      console.log("Same as department Head");
+      // console.log("Same as department Head");
     } else {
       depart.departmentChatGroup.push(staff);
     }
@@ -1107,7 +1090,7 @@ app.post(
     });
 
     await newExam.save();
-    console.log(newExam, "Exam Was Saved");
+    // console.log(newExam, "Exam Was Saved");
     subject.subjectExams.push(newExam);
     batch.batchExam.push(newExam);
     classRoom.classExam.push(newExam);
@@ -1145,21 +1128,21 @@ app.get("/subject-detail/:suid", async (req, res) => {
 
 // Marks Submit and Save of Student
 app.post("/student/marks/", isLoggedIn, async (req, res) => {
-  console.log("Data Recived");
+  // console.log("Data Recived");
   const { studentMarksData, studentText, activeExamData } = req.body;
-  console.log(studentMarksData, studentMarksData, studentMarksData);
+  // console.log(studentMarksData, studentMarksData, studentMarksData);
   const student = await Student.findById({ _id: studentId });
   const examMarks = {
     examId: examId,
     examTotalMarks: totalMarks,
     examObtainMarks: obtainedMarks,
   };
-  console.log(examMarks);
+  // console.log(examMarks);
   student.sudentMarks.push(examMarks);
   await student.save();
-  console.log(examMarks);
+  // console.log(examMarks);
   res.status(200).send({ message: "Successfully Marks Save" });
-  console.log("send Responce Successfull");
+  // console.log("send Responce Successfull");
 });
 
 ///////////////////////////////////////////////////////
@@ -1245,21 +1228,21 @@ app.post(
     subjectMaster.subjects.push(subject);
     subject.class = classes;
     if (String(classes.classTeacher._id) == String(staff._id)) {
-      console.log("Same as Subject Teacher");
+      // console.log("Same as Subject Teacher");
     } else {
       batch.batchStaff.push(staff);
       staff.batches = batch;
     }
     if (String(depart.dHead._id) == String(staff._id)) {
-      console.log("Same as department Head");
+      // console.log("Same as department Head");
     } else {
       depart.departmentChatGroup.push(staff);
     }
     staff.staffSubject.push(subject);
     subject.subjectTeacherName = staff;
-    console.log(staff._id);
-    console.log(classes.classTeacher._id);
-    console.log(batch.batchStaff);
+    // console.log(staff._id);
+    // console.log(classes.classTeacher._id);
+    // console.log(batch.batchStaff);
     await subjectMaster.save();
     await classes.save();
     await batch.save();
@@ -1781,9 +1764,9 @@ app.post("/student/:sid/fee/:id", isLoggedIn, async (req, res) => {
     fData.studentsList.length >= 1 &&
     fData.studentsList.includes(String(student._id))
   ) {
-    console.log("includes");
-    console.log(fData._id);
-    console.log(fData.studentsList);
+    // console.log("includes");
+    // console.log(fData._id);
+    // console.log(fData.studentsList);
     res.status(200).send({
       message: `${student.studentFirstName} paid the ${fData.feeName}`,
     });
@@ -2202,7 +2185,7 @@ app.post("/user-register", async (req, res) => {
 
 app.post("/user-detail/:uid", async (req, res) => {
   const { uid } = req.params;
-  console.log(req.params);
+  // console.log(req.params);
   const user = await User.findById({ _id: uid });
   if (user) {
     if (user.userStatus === "Not Verified") {
@@ -2237,7 +2220,7 @@ app.post("/user-detail-verify/:uid", async (req, res) => {
     })
     .then((data) => {
       user.userStatus = data.status;
-      console.log("Thanks For Confirmations...");
+      // console.log("Thanks For Confirmations...");
       user.save();
       res.send({ message: "Status will be Approved...", user });
     });
@@ -2378,7 +2361,7 @@ app.post(
     const { id } = req.params;
     const file = req.file;
     const results = await uploadFile(file);
-    console.log("Uploaded photo in aws");
+    // console.log("Uploaded photo in aws");
     const user = await User.findById({ _id: id });
     user.profilePhoto = results.key;
     user.photoId = "0";
@@ -2423,9 +2406,9 @@ app.post("/user/post/like", isLoggedIn, async (req, res) => {
       userpost.userlike.length >= 0 &&
       userpost.userlike.includes(String(user_sessions._id))
     ) {
-      console.log("You already liked it");
-      console.log(userpost.userlike.length);
-      console.log(userpost.userlike.includes(String(user_sessions._id)));
+      // console.log("You already liked it");
+      // console.log(userpost.userlike.length);
+      // console.log(userpost.userlike.includes(String(user_sessions._id)));
     } else {
       userpost.userlike.push(user_sessions._id);
       await userpost.save();
@@ -2436,7 +2419,7 @@ app.post("/user/post/like", isLoggedIn, async (req, res) => {
       userpost.userlikeIns.length >= 1 &&
       userpost.userlikeIns.includes(String(institute_sessions._id))
     ) {
-      console.log("You already liked it institute");
+      // console.log("You already liked it institute");
     } else {
       userpost.userlikeIns.push(institute_sessions._id);
       await userpost.save();
@@ -2457,7 +2440,7 @@ app.post("/user/post/unlike", isLoggedIn, async (req, res) => {
 
 app.post("/user/post/comments/:id", async (req, res) => {
   const { id } = req.params;
-  console.log(req.params, req.body);
+  // console.log(req.params, req.body);
   const userpost = await UserPost.findById({ _id: id });
   const usercomment = await new UserComment({ ...req.body });
   if (req.session.institute) {
@@ -2479,7 +2462,6 @@ app.put("/user/follow-ins/institute", async (req, res) => {
   const sinstitute = await InstituteAdmin.findById({
     _id: req.body.InsfollowId,
   });
-
   // user.userInstituteFollowing.splice(req.body.InsfollowId, 2)
   // sinstitute.userFollowersList.splice(req.session.user._id, 1)
   // await user.save()
@@ -2488,27 +2470,10 @@ app.put("/user/follow-ins/institute", async (req, res) => {
   if (sinstitute.userFollowersList.includes(req.session.user._id)) {
     res.status(200).send({ message: "You Already Following This Institute" });
   } else {
-    const institute = await InstituteAdmin.findByIdAndUpdate(
-      req.body.InsfollowId,
-      { $push: { userFollowersList: req.session.user._id } },
-      { new: true },
-      (data, err) => {
-        if (err) {
-          console.log("Something Went Wrong");
-        }
-        User.findByIdAndUpdate(
-          req.session.user._id,
-          { $push: { userInstituteFollowing: req.body.InsfollowId } },
-          { new: true }
-        )
-          .then((data) => {
-            res.status(200).send({ message: "Follow Institute", data });
-          })
-          .catch((e) => {
-            console.log("Something Went Wrong");
-          });
-      }
-    );
+    sinstitute.userFollowersList.push(req.session.user._id);
+    user.userInstituteFollowing.push(req.body.InsfollowId);
+    await sinstitute.save();
+    await user.save();
   }
 });
 
@@ -2518,7 +2483,7 @@ app.post("/user-search-profile", isLoggedIn, async (req, res) => {
     userLegalName: req.body.userSearchProfile,
   });
   res.status(200).send({ message: "Search User Here", user });
-  console.log(user);
+  // console.log(user);
 });
 
 app.put("/user/follow-ins", async (req, res) => {
@@ -2532,27 +2497,10 @@ app.put("/user/follow-ins", async (req, res) => {
   if (user.userFollowing.includes(req.body.userFollowId)) {
     res.status(200).send({ message: "You Already Following This User" });
   } else {
-    const user = await User.findByIdAndUpdate(
-      req.body.userFollowId,
-      { $push: { userFollowers: req.session.user._id } },
-      { new: true },
-      (data, err) => {
-        if (err) {
-          console.log("Something Went Wrong");
-        }
-        User.findByIdAndUpdate(
-          req.session.user._id,
-          { $push: { userFollowing: req.body.userFollowId } },
-          { new: true }
-        )
-          .then((data) => {
-            res.status(200).send({ message: "Follow User", data });
-          })
-          .catch((e) => {
-            console.log("Something Went Wrong");
-          });
-      }
-    );
+    suser.userFollowers.push(req.session.user._id);
+    user.userFollowing.push(req.body.userFollowId);
+    await suser.save();
+    await user.save();
   }
   // }
 });
@@ -2576,39 +2524,12 @@ app.put("/user/circle-ins", async (req, res) => {
     } catch (err) {
       res.status(500).json(err);
     }
-    // const userFo = await User.findById({_id: req.session.user._id})
-    // const userFl = await User.findById({_id: req.body.followId})
-    // console.log(userFo._id, userFl._id)
-    // userFo.Followers.splice(req.body.followId, 1)
-    // userFo.Following.splice(req.body.followId, 1)
-    // userFl.Followers.splice(req.session.user._id, 1)
-    // userFl.Following.splice(req.session.user._id, 1)
-    // await userFo.save()
-    // await userFl.save()
-
-    const user = await User.findByIdAndUpdate(
-      req.body.followId,
-      { $push: { userCircle: req.session.user._id } },
-      { new: true },
-      (data, err) => {
-        if (err) {
-          console.log("Something Went Wrong");
-        }
-        User.findByIdAndUpdate(
-          req.session.user._id,
-          { $push: { userCircle: req.body.followId } },
-          { new: true }
-        )
-          .then((data) => {
-            res
-              .status(200)
-              .send({ message: "You Are In Circle With That User", data });
-          })
-          .catch((e) => {
-            console.log("Something Went Wrong");
-          });
-      }
-    );
+    suser.userFollowers.splice(req.session.user._id, 1);
+    user.userFollowing.splice(req.body.followId, 1);
+    suser.userCircle.push(req.session.user._id);
+    user.userCircle.push(req.body.followId);
+    await suser.save();
+    await user.save();
   }
 });
 
@@ -2616,9 +2537,9 @@ app.post("/user/forgot", isLoggedIn, async (req, res) => {
   const { username } = req.body;
   const user = await User.findOne({ username: username });
   const institute = await InstituteAdmin.findOne({ name: username });
-  console.log(user);
-  console.log(req.body);
-  console.log(institute);
+  // console.log(user);
+  // console.log(req.body);
+  // console.log(institute);
   if (user) {
     client.verify
       .services(data.SERVICEID)
@@ -2690,7 +2611,7 @@ app.post("/user/reset/password/:rid", isLoggedIn, async (req, res) => {
   if (user) {
     if (userPassword === userRePassword) {
       user.userPassword = hashUserPass;
-      console.log(user.userPassword);
+      // console.log(user.userPassword);
       await user.save();
       res.status(200).send({ message: "Password Changed Successfully", user });
     } else {
