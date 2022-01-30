@@ -5,6 +5,8 @@ const Staff = require('./Staff')
 const Checklist = require('./Checklist')
 const Fees = require('./Fees')
 const Holiday = require('./Holiday')
+const Batch = require('./Batch')
+
 
 const departmentSchema = new mongoose.Schema({
     dName: { type: String, required: true },
@@ -24,6 +26,14 @@ const departmentSchema = new mongoose.Schema({
     dStudentPresident: { type: String },
     dAdminClerk: { type: String },
     dVicePrinciple: { type: String },
+    departmentSelectBatch: { 
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Batch'
+    },
+    userBatch: {
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'Batch'
+    },
     institute: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'InstituteAdmin'

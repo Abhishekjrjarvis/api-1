@@ -108,7 +108,7 @@ app.use(
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      expires: Date.now() + 1000 * 60 * 60 * 24 * 7,
+      // expires: Date.now() + 1000 * 60 * 60 * 24 * 7,
       maxAge: Date.now() + 30 * 86400 * 1000,
     },
   })
@@ -408,7 +408,20 @@ app.get("/insdashboard/:id", async (req, res) => {
       .populate("classRooms")
       .populate("student")
       .populate("ApproveStudent")
-      .populate("userFollowersList");
+      .populate("saveInsPost")
+      .populate({
+        path: "posts",
+        populate: {
+          path: "insLike",
+        },
+      })
+      .populate("userFollowersList")
+      .populate({
+        path: "posts",
+        populate: {
+          path: "insUserLike",
+        },
+      });
     res.status(200).send({ message: "Your Institute", institute });
   } catch {
     console.log("Somthing went wrongs");
@@ -432,16 +445,43 @@ app.post(
     const { id } = req.params;
     const institute = await InstituteAdmin.findById({ _id: id });
     const post = new Post({ ...req.body });
+    post.imageId = "1";
     institute.posts.push(post);
     post.institute = institute._id;
     await institute.save();
     await post.save();
-    const institutes = await InstituteAdmin.findById({ _id: id }).populate(
-      "posts"
-    );
     res.status(200).send({ message: "Your Institute", institute });
   }
 );
+
+app.post(
+  "/insdashboard/:id/ins-post/image",
+  isLoggedIn,
+  // isApproved,
+  upload.single("file"),
+  async (req, res) => {
+    const { id } = req.params;
+    const file = req.file;
+    const results = await uploadFile(file);
+    const institute = await InstituteAdmin.findById({ _id: id });
+    const post = new Post({ ...req.body });
+    post.imageId = "0";
+    post.CreateImage = results.key;
+    console.log("Tis is institute : ", post);
+    institute.posts.push(post);
+    post.institute = institute._id;
+    await institute.save();
+    await post.save();
+    await unlinkFile(file.path);
+    res.status(200).send({ message: "Your Institute", institute });
+  }
+);
+
+app.get("/insashboard/ins-post/images/:key", async (req, res) => {
+  const key = req.params.key;
+  const readStream = getFileStream(key);
+  readStream.pipe(res);
+});
 
 // app.post("/insdashboard/:id/ins-post/image/",upload.single("file"),
 // async (req, res) => {
@@ -741,7 +781,7 @@ app.post("/post/like", isLoggedIn, async (req, res) => {
       await post.save();
       res.status(200).send({ message: "Added To Likes", post });
     }
-  } else if (user_session._id) {
+  } else if (user_session) {
     if (
       post.insUserLike.length >= 1 &&
       post.insUserLike.includes(String(user_session._id))
@@ -756,14 +796,42 @@ app.post("/post/like", isLoggedIn, async (req, res) => {
   }
 });
 
-// Institute Post For Dislike
+app.post("/ins/save/post", isLoggedIn, async (req, res) => {
+  const { postId } = req.body;
+  const post = await Post.findById({ _id: postId });
+  const institute_session = req.session.institute;
+  const user_session = req.session.user;
+  if (institute_session) {
+    const institute = await InstituteAdmin.findById({
+      _id: institute_session._id,
+    });
+    institute.saveInsPost.push(post);
+    await institute.save();
+    res.status(200).send({ message: "Added To Favourites", institute });
+  } else if (user_session) {
+    const user = await User.findById({ _id: user_session._id });
+    user.saveUserInsPost.push(post);
+    await user.save();
+    res.status(200).send({ message: "Added To Favourites", user });
+  } else {
+  }
+});
+
 app.post("/post/unlike", isLoggedIn, async (req, res) => {
   const { postId } = req.body;
   const post = await Post.findById({ _id: postId });
-  const user_id = req.session.institute || req.session.user;
-  post.like.pop(user_id._id);
-  await post.save();
-  res.status(200).send({ message: "Removed From Likes", post });
+  const institute_session = req.session.institute;
+  const user_session = req.session.user;
+  if (institute_session) {
+    post.insLike.splice(institute_session._id, 1);
+    await post.save();
+    res.status(200).send({ message: "Removed from Likes", post });
+  } else if (user_session) {
+    post.insUserLike.splice(user_session._id, 1);
+    await post.save();
+    res.status(200).send({ message: "Removed from Likes", post });
+  } else {
+  }
 });
 
 // Institute Post For Comments
@@ -889,16 +957,23 @@ app.get("/department/:did", async (req, res) => {
   const { did } = req.params;
   const department = await Department.findById({ _id: did })
     .populate({ path: "dHead" })
-    .populate("batches");
+    .populate("batches")
+    .populate({ path: "departmentSelectBatch" })
+    .populate({ path: "userBatch" });
   res.status(200).send({ message: "Department Data", department });
 });
 
 // Institute Batch in Department
 
-app.post("/batchdetail", isLoggedIn, async (req, res) => {
+app.post("/:id/batchdetail", isLoggedIn, async (req, res) => {
+  const { id } = req.params;
   const { batchDetail } = req.body;
+  const department = await Department.findById({ _id: id });
   const batches = await Batch.findById({ _id: batchDetail });
-  res.status(200).send({ message: "Batch Detail Data", batches });
+  department.departmentSelectBatch = batches;
+  department.userBatch = batches;
+  await department.save();
+  res.status(200).send({ message: "Batch Detail Data", batches, department });
 });
 
 // Institute Batch Class Data
@@ -1580,7 +1655,8 @@ app.get("/staffdepartment/:sid", async (req, res) => {
     .populate({
       path: "institute",
     })
-    .populate("checklists");
+    .populate("checklists")
+    .populate({ path: "userBatch" });
   res.status(200).send({ message: "Department Profile Data", department });
 });
 
@@ -1625,11 +1701,16 @@ app.get("/staffsubject/:sid", async (req, res) => {
 
 // Staff Department Batch Data
 
-app.post("/department/batch", isLoggedIn, async (req, res) => {
+app.post("/:did/department/batch", isLoggedIn, async (req, res) => {
+  const { did } = req.params;
   const { BatchId } = req.body;
   const batch = await Batch.findById({ _id: BatchId })
     .populate("classroom")
     .populate("batchStaff");
+
+  // const department = await Department.findById({_id: did})
+  // department.userBatch = batch
+  // await department.save()
   res.status(200).send({ message: "Batch Class Data", batch });
 });
 
@@ -1720,7 +1801,9 @@ app.post("/department-class/checklist/:did", isLoggedIn, async (req, res) => {
 
 app.post("/checklist", isLoggedIn, async (req, res) => {
   const { ChecklistId } = req.body;
-  const checklist = await Checklist.findById({ _id: ChecklistId });
+  const checklist = await Checklist.findById({ _id: ChecklistId }).populate(
+    "student"
+  );
   res.status(200).send({ message: "Checklist Data", checklist });
 });
 
@@ -1765,9 +1848,6 @@ app.post("/student/:sid/fee/:id", isLoggedIn, async (req, res) => {
     fData.studentsList.length >= 1 &&
     fData.studentsList.includes(String(student._id))
   ) {
-    // console.log("includes");
-    // console.log(fData._id);
-    // console.log(fData.studentsList);
     res.status(200).send({
       message: `${student.studentFirstName} paid the ${fData.feeName}`,
     });
@@ -1862,39 +1942,43 @@ app.post(
     const student = await Student.findById({ _id: sid });
     const attendDates = await AttendenceDate.findById({ _id: aid });
     const attendReg = await Attendence.findById({ _id: rid });
-    if (
-      attendDates.presentStudent.length >= 1 &&
-      attendDates.presentStudent.includes(String(student._id))
-    ) {
-      res.status(200).send({ message: "Already Marked Present" });
-    } else {
+    try {
       if (
-        attendDates.absentStudent &&
-        attendDates.absentStudent.includes(String(student._id))
+        attendDates.presentStudent.length >= 1 &&
+        attendDates.presentStudent.includes(String(student._id))
       ) {
-        attendDates.absentStudent.splice(student._id, 1);
-        // console.log(attendDates.absentStudent)
-        // console.log('marked as present')
-        attendDates.presentStudent.push(student);
-        attendDates.presentstudents = student;
-        await attendDates.save();
-        res.status(200).send({ message: "finally marked present" });
+        res.status(200).send({ message: "Already Marked Present" });
       } else {
-        attendDates.presentStudent.push(student);
-        attendDates.presentstudents = student;
-        student.attendDate.push(attendDates);
-        student.attendenceReg = attendReg;
-        attendReg.attendenceDate.push(attendDates);
-        await attendDates.save();
-        await student.save();
-        await attendReg.save();
-        res.status(200).send({
-          message: `${student.studentFirstName} is ${req.body.status} on that day`,
-          attendDates,
-          student,
-          attendReg,
-        });
+        if (
+          attendDates.absentStudent &&
+          attendDates.absentStudent.includes(String(student._id))
+        ) {
+          attendDates.absentStudent.splice(student._id, 1);
+          // console.log(attendDates.absentStudent)
+          // console.log('marked as present')
+          attendDates.presentStudent.push(student);
+          attendDates.presentstudents = student;
+          await attendDates.save();
+          res.status(200).send({ message: "finally marked present" });
+        } else {
+          attendDates.presentStudent.push(student);
+          attendDates.presentstudents = student;
+          student.attendDate.push(attendDates);
+          student.attendenceReg = attendReg;
+          attendReg.attendenceDate.push(attendDates);
+          await attendDates.save();
+          await student.save();
+          await attendReg.save();
+          res.status(200).send({
+            message: `${student.studentFirstName} is ${req.body.status} on that day`,
+            attendDates,
+            student,
+            attendReg,
+          });
+        }
       }
+    } catch {
+      res.status(400).send({ error: "Not Success" });
     }
   }
 );
@@ -1907,39 +1991,43 @@ app.post(
     const student = await Student.findById({ _id: sid });
     const attendDates = await AttendenceDate.findById({ _id: aid });
     const attendReg = await Attendence.findById({ _id: rid });
-    if (
-      attendDates.absentStudent.length >= 1 &&
-      attendDates.absentStudent.includes(String(student._id))
-    ) {
-      res.status(200).send({ message: "Already Marked Absent" });
-    } else {
+    try {
       if (
-        attendDates.presentStudent &&
-        attendDates.presentStudent.includes(String(student._id))
+        attendDates.absentStudent.length >= 1 &&
+        attendDates.absentStudent.includes(String(student._id))
       ) {
-        attendDates.presentStudent.splice(student._id, 1);
-        // console.log(attendDates.presentStudent)
-        // console.log('marked as absent')
-        attendDates.absentStudent.push(student);
-        attendDates.absentstudents = student;
-        await attendDates.save();
-        res.status(200).send({ message: "finally marked absent" });
+        res.status(200).send({ message: "Already Marked Absent" });
       } else {
-        attendDates.absentStudent.push(student);
-        attendDates.absentstudents = student;
-        student.attendDate.push(attendDates);
-        student.attendenceReg = attendReg;
-        attendReg.attendenceDate.push(attendDates);
-        await attendDates.save();
-        await student.save();
-        await attendReg.save();
-        res.status(200).send({
-          message: `${student.studentFirstName} is ${req.body.status} on that day`,
-          attendDates,
-          student,
-          attendReg,
-        });
+        if (
+          attendDates.presentStudent &&
+          attendDates.presentStudent.includes(String(student._id))
+        ) {
+          attendDates.presentStudent.splice(student._id, 1);
+          // console.log(attendDates.presentStudent)
+          // console.log('marked as absent')
+          attendDates.absentStudent.push(student);
+          attendDates.absentstudents = student;
+          await attendDates.save();
+          res.status(200).send({ message: "finally marked absent" });
+        } else {
+          attendDates.absentStudent.push(student);
+          attendDates.absentstudents = student;
+          student.attendDate.push(attendDates);
+          student.attendenceReg = attendReg;
+          attendReg.attendenceDate.push(attendDates);
+          await attendDates.save();
+          await student.save();
+          await attendReg.save();
+          res.status(200).send({
+            message: `${student.studentFirstName} is ${req.body.status} on that day`,
+            attendDates,
+            student,
+            attendReg,
+          });
+        }
       }
+    } catch {
+      res.status(400).send({ error: "Not Success" });
     }
   }
 );
@@ -1952,39 +2040,43 @@ app.post(
     const staff = await Staff.findById({ _id: sid });
     const staffAttendDates = await StaffAttendenceDate.findById({ _id: aid });
     const staffAttendReg = await StaffAttendence.findById({ _id: rid });
-    if (
-      staffAttendDates.presentStaff.length >= 1 &&
-      staffAttendDates.presentStaff.includes(String(staff._id))
-    ) {
-      res.status(200).send({ message: "Already Marked Present" });
-    } else {
+    try {
       if (
-        staffAttendDates.absentStaff &&
-        staffAttendDates.absentStaff.includes(String(staff._id))
+        staffAttendDates.presentStaff.length >= 1 &&
+        staffAttendDates.presentStaff.includes(String(staff._id))
       ) {
-        staffAttendDates.absentStaff.splice(staff._id, 1);
-        // console.log(staffAttendDates.absentStudent)
-        // console.log('marked as present')
-        staffAttendDates.presentStaff.push(staff);
-        staffAttendDates.presentstaffs = staff;
-        await staffAttendDates.save();
-        res.status(200).send({ message: "finally marked present" });
+        res.status(200).send({ message: "Already Marked Present" });
       } else {
-        staffAttendDates.presentStaff.push(staff);
-        staffAttendDates.presentstaffs = staff;
-        staff.attendDates.push(staffAttendDates);
-        staff.attendenceRegs = staffAttendReg;
-        staffAttendReg.staffAttendenceDate.push(staffAttendDates);
-        await staffAttendDates.save();
-        await staff.save();
-        await staffAttendReg.save();
-        res.status(200).send({
-          message: `${staff.staffFirstName} is ${req.body.status} on that day`,
-          staffAttendDates,
-          staff,
-          staffAttendReg,
-        });
+        if (
+          staffAttendDates.absentStaff &&
+          staffAttendDates.absentStaff.includes(String(staff._id))
+        ) {
+          staffAttendDates.absentStaff.splice(staff._id, 1);
+          // console.log(staffAttendDates.absentStudent)
+          // console.log('marked as present')
+          staffAttendDates.presentStaff.push(staff);
+          staffAttendDates.presentstaffs = staff;
+          await staffAttendDates.save();
+          res.status(200).send({ message: "finally marked present" });
+        } else {
+          staffAttendDates.presentStaff.push(staff);
+          staffAttendDates.presentstaffs = staff;
+          staff.attendDates.push(staffAttendDates);
+          staff.attendenceRegs = staffAttendReg;
+          staffAttendReg.staffAttendenceDate.push(staffAttendDates);
+          await staffAttendDates.save();
+          await staff.save();
+          await staffAttendReg.save();
+          res.status(200).send({
+            message: `${staff.staffFirstName} is ${req.body.status} on that day`,
+            staffAttendDates,
+            staff,
+            staffAttendReg,
+          });
+        }
       }
+    } catch {
+      res.status(400).send({ error: "Not Success" });
     }
   }
 );
@@ -1997,39 +2089,43 @@ app.post(
     const staff = await Staff.findById({ _id: sid });
     const staffAttendDates = await StaffAttendenceDate.findById({ _id: aid });
     const staffAttendReg = await StaffAttendence.findById({ _id: rid });
-    if (
-      staffAttendDates.absentStaff.length >= 1 &&
-      staffAttendDates.absentStaff.includes(String(staff._id))
-    ) {
-      res.status(200).send({ message: "Already Marked Absent" });
-    } else {
+    try {
       if (
-        staffAttendDates.presentStaff &&
-        staffAttendDates.presentStaff.includes(String(staff._id))
+        staffAttendDates.absentStaff.length >= 1 &&
+        staffAttendDates.absentStaff.includes(String(staff._id))
       ) {
-        staffAttendDates.presentStaff.splice(staff._id, 1);
-        // console.log(staffAttendDates.presentStudent)
-        // console.log('marked as absent')
-        staffAttendDates.absentStaff.push(staff);
-        staffAttendDates.absentstaffs = staff;
-        await staffAttendDates.save();
-        res.status(200).send({ message: "finally marked absent" });
+        res.status(200).send({ message: "Already Marked Absent" });
       } else {
-        staffAttendDates.absentStaff.push(staff);
-        staffAttendDates.absentstaffs = staff;
-        staff.attendDates.push(staffAttendDates);
-        staff.attendenceRegs = staffAttendReg;
-        staffAttendReg.staffAttendenceDate.push(staffAttendDates);
-        await staffAttendDates.save();
-        await staff.save();
-        await staffAttendReg.save();
-        res.status(200).send({
-          message: `${staff.staffFirstName} is ${req.body.status} on that day`,
-          staffAttendDates,
-          staff,
-          staffAttendReg,
-        });
+        if (
+          staffAttendDates.presentStaff &&
+          staffAttendDates.presentStaff.includes(String(staff._id))
+        ) {
+          staffAttendDates.presentStaff.splice(staff._id, 1);
+          // console.log(staffAttendDates.presentStudent)
+          // console.log('marked as absent')
+          staffAttendDates.absentStaff.push(staff);
+          staffAttendDates.absentstaffs = staff;
+          await staffAttendDates.save();
+          res.status(200).send({ message: "finally marked absent" });
+        } else {
+          staffAttendDates.absentStaff.push(staff);
+          staffAttendDates.absentstaffs = staff;
+          staff.attendDates.push(staffAttendDates);
+          staff.attendenceRegs = staffAttendReg;
+          staffAttendReg.staffAttendenceDate.push(staffAttendDates);
+          await staffAttendDates.save();
+          await staff.save();
+          await staffAttendReg.save();
+          res.status(200).send({
+            message: `${staff.staffFirstName} is ${req.body.status} on that day`,
+            staffAttendDates,
+            staff,
+            staffAttendReg,
+          });
+        }
       }
+    } catch {
+      res.status(400).send({ error: "Not Success" });
     }
   }
 );
@@ -2042,13 +2138,6 @@ app.post("/attendence/detail", isLoggedIn, async (req, res) => {
     .populate("absentStudent");
   res.status(200).send({ message: "Attendence on that day", attendDates });
 });
-
-// app.get('/student/:sid/attendence', async (req, res) =>{
-//     const { sid } = req.params
-//     const attendStudent = await Student.findById({_id: sid})
-//     .populate('attendDate')
-//     res.status(200).send({ message: 'student attendence', attendStudent})
-// })
 
 app.post("/attendence/status/student/:sid", isLoggedIn, async (req, res) => {
   const { sid } = req.params;
@@ -2148,6 +2237,7 @@ app.post("/department/holiday/:did", isLoggedIn, async (req, res) => {
 
 app.post("/student/:sid/checklist/:cid", isLoggedIn, async (req, res) => {
   const { sid, cid } = req.params;
+  console.log(req.params);
   const student = await Student.findById({ _id: sid });
   const checklist = await Checklist.findById({ _id: cid });
   student.checklist.push(checklist);
@@ -2306,14 +2396,28 @@ app.get("/userdashboard/:id", async (req, res) => {
     .populate("userFollowing")
     .populate("userCircle")
     .populate("InstituteReferals")
-    .populate("userInstituteFollowing")
+    .populate({
+      path: "userInstituteFollowing",
+      populate: {
+        path: "announcement",
+      },
+    })
     .populate("announcement")
     .populate({
       path: "student",
       populate: {
         path: "studentClass",
       },
-    });
+    })
+    .populate("saveUsersPost")
+    .populate({
+      path: "userPosts",
+      populate: {
+        path: "userlike",
+      },
+    })
+    .populate("InstituteReferals")
+    .populate("saveUserInsPost");
   res.status(200).send({ message: "Your User", user });
 });
 
@@ -2327,11 +2431,40 @@ app.post("/userdashboard/:id/user-post", isLoggedIn, async (req, res) => {
   const { id } = req.params;
   const user = await User.findById({ _id: id });
   const post = new UserPost({ ...req.body });
+  post.imageId = "1";
   user.userPosts.push(post);
   post.user = user._id;
   await user.save();
   await post.save();
   res.status(200).send({ message: "Post Successfully Created", user });
+});
+
+app.post(
+  "/userdashboard/:id/user-post/image",
+  isLoggedIn,
+  upload.single("file"),
+  async (req, res) => {
+    const { id } = req.params;
+    const file = req.file;
+    const results = await uploadFile(file);
+    const user = await User.findById({ _id: id });
+    const post = new UserPost({ ...req.body });
+    post.imageId = "0";
+    post.userCreateImage = results.key;
+    // console.log("this is fronted post data : ", post);
+    user.userPosts.push(post);
+    post.user = user._id;
+    await user.save();
+    await post.save();
+    await unlinkFile(file.path);
+    res.status(200).send({ message: "Post Successfully Created", user });
+  }
+);
+
+app.get("/userdashboard/user-post/images/:key", async (req, res) => {
+  const key = req.params.key;
+  const readStream = getFileStream(key);
+  readStream.pipe(res);
 });
 
 ////////////////////////////
@@ -2433,10 +2566,19 @@ app.post("/user/post/like", isLoggedIn, async (req, res) => {
 app.post("/user/post/unlike", isLoggedIn, async (req, res) => {
   const { postId } = req.body;
   const userpost = await UserPost.findById({ _id: postId });
-  const users = req.session.user || req.session.institute;
-  userpost.userlike.pop(users._id);
-  await userpost.save();
-  res.status(200).send({ message: "Removed From Likes", userpost });
+  const user_sessions = req.session.user;
+  const institute_sessions = req.session.institute;
+  if (user_sessions) {
+    userpost.userlike.splice(user_sessions._id, 1);
+    await userpost.save();
+    console.log("delete");
+    res.status(200).send({ message: "Removed from Likes", userpost });
+  } else if (institute_sessions) {
+    userpost.userlikeIns.splice(institute_sessions._id, 1);
+    await userpost.save();
+    res.status(200).send({ message: "Removed from Likes", userpost });
+  } else {
+  }
 });
 
 app.post("/user/post/comments/:id", async (req, res) => {
@@ -2650,6 +2792,15 @@ app.get("/user-announcement-detail/:id", async (req, res) => {
     "user"
   );
   res.status(200).send({ message: "Announcement Detail", announcement });
+});
+
+app.post("/user/save/post", async (req, res) => {
+  const { postId } = req.body;
+  const user = await User.findById({ _id: req.session.user._id });
+  const userPostsData = await UserPost.findById({ _id: postId });
+  user.saveUsersPost.push(userPostsData);
+  await user.save();
+  res.status(200).send({ message: "Added To favourites", user });
 });
 
 app.get("*", (req, res) => {

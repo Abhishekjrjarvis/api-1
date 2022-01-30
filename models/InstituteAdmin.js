@@ -6,6 +6,7 @@ const Staff = require("./Staff");
 const User = require("./User");
 const Class = require("./Class");
 const Student = require("./Student");
+const UserPost = require('./userPost')
 
 const instituteAdminSchema = new mongoose.Schema({
   insName: { type: String, required: true, unique: true },
@@ -105,6 +106,18 @@ const instituteAdminSchema = new mongoose.Schema({
       ref: "Student",
     },
   ],
+  saveInsPost: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Post'
+    }
+  ],
+  saveUserPost: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'UserPost'
+    }
+  ]
 });
 
 const InstituteAdmin = mongoose.model("InstituteAdmin", instituteAdminSchema);

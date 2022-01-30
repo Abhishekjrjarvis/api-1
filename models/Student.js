@@ -7,6 +7,7 @@ const Fees = require("./Fees");
 const AttendenceDate = require("./AttendenceDate");
 const Attendence = require("./Attendence");
 const Exam = require("./Exam");
+const Checklist = require('./Checklist')
 
 const studentSchema = new mongoose.Schema({
   studentCode: { type: String },
@@ -77,6 +78,16 @@ const studentSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Attendence",
   },
+  checklist: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Checklist'
+    }
+  ],
+  checklistAllottedStatus: {
+    type: String,
+    default: 'Not Allotted'
+  }
 });
 
 const Student = mongoose.model("Student", studentSchema);

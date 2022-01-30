@@ -4,6 +4,7 @@ const Staff = require("./Staff");
 const InstituteAdmin = require("./InstituteAdmin");
 const Student = require("./Student");
 const UserAnnouncement = require("./UserAnnouncement");
+const Post = require('./Post')
 
 const userSchema = new mongoose.Schema({
   userPhoneNumber: { type: Number, required: true, maxlength: 10 },
@@ -82,6 +83,19 @@ const userSchema = new mongoose.Schema({
       ref: "UserAnnouncement",
     },
   ],
+  saveUsersPost: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'UserPost'
+    }
+  ],
+  saveUserInsPost: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Post'
+    }
+  ],
+
 });
 
 const User = mongoose.model("User", userSchema);

@@ -1,56 +1,59 @@
-const mongoose = require('mongoose')
-const InstituteAdmin = require('./InstituteAdmin')
-const Comment = require('./Comment')
-const User = require('./User')
+const mongoose = require("mongoose");
+const InstituteAdmin = require("./InstituteAdmin");
+const Comment = require("./Comment");
+const User = require("./User");
 
 const postSchema = new mongoose.Schema({
-    CreateInsPost: {
-        type: String
+  CreateInsPost: {
+    type: String,
+  },
+  CreateImage: {
+    type: String,
+  },
+  imageId: {
+    type: String,
+  },
+  CreateVideo: {
+    type: String,
+  },
+  // caption: {
+  //     type: String
+  // },
+  // CreateInsLocation: {
+  //     type: String
+  // },
+  CreatePostStatus: {
+    type: String,
+    default: "Public",
+  },
+  insLike: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "InstituteAdmin",
     },
-    CreateImage: {
-        type :String
+  ],
+  insUserLike: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
     },
-    CreateVideo: {
-        type :String
+  ],
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+  institute: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "InstituteAdmin",
+  },
+  comment: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Comment",
     },
-    caption: {
-        type: String
-    },
-    CreateInsLocation: {
-        type: String
-    },
-    CreatePostStatus: {
-        type: String
-    },
-    insLike: [
-        {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'InstituteAdmin'
-        }
-    ],
-    insUserLike: [
-        {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
-        }
-    ],
-    createdAt: {
-        type: Date,
-        default: Date.now
-    },
-    institute: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'InstituteAdmin'
-    },
-    comment:[
-        {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Comment'
-        }
-    ]
+  ],
+});
 
-})
+const Post = mongoose.model("Post", postSchema);
 
-const Post = mongoose.model('Post', postSchema)
-
-module.exports = Post
+module.exports = Post;
