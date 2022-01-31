@@ -50,7 +50,7 @@ const upload = multer({ dest: "uploads/" });
 const fs = require("fs");
 const util = require("util");
 const unlinkFile = util.promisify(fs.unlink);
-const Role = require("./models/Role")
+const Role = require("./models/Role");
 const { uploadFile, getFileStream } = require("./S3Configuration");
 // const dburl = process.env.DB_URL
 // ||
@@ -79,8 +79,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(
   cors({
-    // origin: "http://44.200.201.35:3000",
-    origin: "http://localhost:3000",
+    origin: "http://44.200.201.35:3000",
+    // origin: "http://localhost:3000",
     methods: ["GET", "POST", "PUT"],
     credentials: true,
   })
