@@ -7,12 +7,11 @@ const Fees = require("./Fees");
 const AttendenceDate = require("./AttendenceDate");
 const Attendence = require("./Attendence");
 const Exam = require("./Exam");
-const Checklist = require('./Checklist')
+const Behaviour = require("./Behaviour");
 
 const studentSchema = new mongoose.Schema({
   studentCode: { type: String },
   studentProfilePhoto: { type: String },
-  photoId: { type: String },
   studentFirstName: { type: String },
   studentMiddleName: { type: String },
   studentLastName: { type: String },
@@ -35,6 +34,10 @@ const studentSchema = new mongoose.Schema({
   studentAadharCard: { type: String },
   studentStatus: { type: String, default: "Not Approved" },
   studentBehaviourReportStatus: { type: String, default: "Not Ready" },
+  studentBehaviourStatus: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Behaviour",
+  },
   studentGRNO: { type: String },
   studentClass: {
     type: mongoose.Schema.Types.ObjectId,
@@ -48,7 +51,7 @@ const studentSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "InstituteAdmin",
   },
-  sudentMarks: [
+  studentMarks: [
     {
       examId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -59,6 +62,10 @@ const studentSchema = new mongoose.Schema({
       },
       examObtainMarks: {
         type: "Number",
+      },
+      examMarksStatus: {
+        type: "string",
+        default: "Not Updated",
       },
     },
   ],
@@ -81,13 +88,13 @@ const studentSchema = new mongoose.Schema({
   checklist: [
     {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Checklist'
-    }
+      ref: "Checklist",
+    },
   ],
   checklistAllottedStatus: {
     type: String,
-    default: 'Not Allotted'
-  }
+    default: "Not Allotted",
+  },
 });
 
 const Student = mongoose.model("Student", studentSchema);

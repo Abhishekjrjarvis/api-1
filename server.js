@@ -237,7 +237,7 @@ app.post("/admin/:aid/reject/ins/:id", isLoggedIn, async (req, res) => {
 //for global user admin "61f6218bc44ebe64f40be27f"
 //for local my system "61efea4f73428a7ef8708c2c"
 app.post("/ins-register", async (req, res) => {
-  const admins = await Admin.findById({ _id: "61efea4f73428a7ef8708c2c" });
+  const admins = await Admin.findById({ _id: "61f6218bc44ebe64f40be27f" });
   const existInstitute = await InstituteAdmin.findOne({ name: req.body.name });
   const existAdmin = await Admin.findOne({ adminUserName: req.body.name });
   const existUser = await User.findOne({ username: req.body.name });
@@ -457,7 +457,7 @@ app.post(
 app.post(
   "/insdashboard/:id/ins-post/image",
   isLoggedIn,
-  // isApproved,
+  isApproved,
   upload.single("file"),
   async (req, res) => {
     const { id } = req.params;
@@ -1203,24 +1203,23 @@ app.get("/subject-detail/:suid", async (req, res) => {
 });
 
 // Marks Submit and Save of Student
-app.post("/student/marks/", isLoggedIn, async (req, res) => {
-  // console.log("Data Recived");
-  const { studentMarksData, studentText, activeExamData } = req.body;
-  // console.log(studentMarksData, studentMarksData, studentMarksData);
-  const student = await Student.findById({ _id: studentId });
-  const examMarks = {
-    examId: examId,
-    examTotalMarks: totalMarks,
-    examObtainMarks: obtainedMarks,
-  };
-  // console.log(examMarks);
-  student.sudentMarks.push(examMarks);
-  await student.save();
-  // console.log(examMarks);
-  res.status(200).send({ message: "Successfully Marks Save" });
-  // console.log("send Responce Successfull");
-});
+app.post("/student/:sid/marks/:eid/:marks", async (req, res) => {
+  const { sid, eid, marks } = req.params;
 
+  const student = await Student.findById({ _id: sid });
+  const exam = await Exam.findById({ _id: eid });
+
+  const examMarks = {
+    examId: eid,
+    examTotalMarks: exam.totalMarks,
+    examObtainMarks: marks,
+    examMarksStatus: "Updated",
+  };
+  student.studentMarks.push(examMarks);
+  await student.save();
+  console.log(examMarks);
+  res.status(200).send({ message: "Successfully Marks Save" });
+});
 ///////////////////////////////////////////////////////
 
 // app.post("/ins/:id/department/:did/batch/:bid", async (req, res) => {
@@ -1586,20 +1585,78 @@ app.get("/staff/:id", async (req, res) => {
 
 // for finding Staff By Id
 
-app.post("/staffdetaildata", isLoggedIn, async (req, res) => {
+app.post("/:id/staffdetaildata", isLoggedIn, async (req, res) => {
+  const { id } = req.params;
   const { staffId } = req.body;
-  const staff = await Staff.findById({ _id: staffId });
-  res.status(200).send({ message: "Staff Detail Data", staff });
+  try {
+    const staff = await Staff.findById({ _id: staffId });
+    const user = await User.findById({ _id: id });
+    const role = await new Role({
+      userSelectStaffRole: staff,
+    });
+    user.role = role;
+    await role.save();
+    await user.save();
+    res.status(200).send({ message: "Staff Detail Data", staff, role });
+  } catch {}
 });
 
 // Student Detail Data
 
-app.post("/studentdetaildata", isLoggedIn, async (req, res) => {
+app.post("/:id/studentdetaildata", isLoggedIn, async (req, res) => {
+  const { id } = req.params;
   const { studentId } = req.body;
-  const student = await Student.findById({ _id: studentId });
-  res.status(200).send({ message: "Student Detail Data", student });
+  try {
+    const student = await Student.findById({ _id: studentId });
+    const user = await User.findById({ _id: id });
+    const role = await new Role({
+      userSelectStudentRole: student,
+    });
+    user.role = role;
+    await role.save();
+    await user.save();
+    res.status(200).send({ message: "Student Detail Data", student });
+  } catch {}
 });
 
+app.get("/studentdetaildata/:id", isLoggedIn, async (req, res) => {
+  const { id } = req.params;
+  const student = await Student.findById({ _id: id })
+    .populate("studentFee")
+    .populate({
+      path: "studentMarks",
+      populate: {
+        path: "examId",
+        populate: {
+          path: "subject",
+        },
+      },
+    })
+    .populate("studentClass")
+    .populate("attendDate")
+    .populate("studentBehaviourStatus");
+  // console.log(student)
+
+  studentSubjects = student.studentClass.subject;
+  examList = student.studentMarks;
+
+  function subWiseExamFilter(eL, subL) {
+    const filterList = [];
+    for (let i = 0; i < subL.length; i++) {
+      let newArray = eL.filter((ele) => {
+        return (d = ele.examId.subject._id === subL[i]);
+      });
+      filterList.push(newArray);
+    }
+    return filterList;
+  }
+
+  const listWithFilter = subWiseExamFilter(examList, studentSubjects);
+
+  res
+    .status(200)
+    .send({ message: "Student Detail Data", student, listWithFilter });
+});
 // Student Status Updated
 
 app.post("/student/status", isLoggedIn, async (req, res) => {
@@ -1896,16 +1953,25 @@ app.post("/class/:cid/student/attendence", isLoggedIn, async (req, res) => {
       .status(200)
       .send({ message: "Today will be holiday Provided by department Admin" });
   } else {
-    const classes = await Class.findById({ _id: cid });
-    const attendReg = await new Attendence({});
-    const attendDate = await new AttendenceDate({ ...req.body });
-    attendDate.className = classes;
-    attendReg.className = classes;
-    await attendDate.save();
-    await attendReg.save();
-    res
-      .status(200)
-      .send({ message: "Attendence Register is Ready", attendDate, attendReg });
+    const existAttend = await AttendenceDate.findOne({
+      attendDate: { $eq: `${req.body.attendDate}` },
+    });
+    if (existAttend) {
+      res.status(200).send({ message: "Attendence Alreay Exists" });
+    } else {
+      const classes = await Class.findById({ _id: cid });
+      const attendReg = await new Attendence({});
+      const attendDate = await new AttendenceDate({ ...req.body });
+      attendDate.className = classes;
+      attendReg.className = classes;
+      await attendDate.save();
+      await attendReg.save();
+      res.status(200).send({
+        message: "Attendence Register is Ready",
+        attendDate,
+        attendReg,
+      });
+    }
   }
 });
 
@@ -1919,18 +1985,25 @@ app.post("/department/:did/staff/attendence", isLoggedIn, async (req, res) => {
       .status(200)
       .send({ message: "Today will be holiday Provided by department Admin" });
   } else {
-    const department = await Department.findById({ _id: did });
-    const staffAttendReg = await new StaffAttendence({});
-    const staffAttendDate = await new StaffAttendenceDate({ ...req.body });
-    staffAttendDate.department = department;
-    staffAttendReg.department = department;
-    await staffAttendDate.save();
-    await staffAttendReg.save();
-    res.status(200).send({
-      message: "Staff Attendence Register is Ready",
-      staffAttendDate,
-      staffAttendReg,
+    const existSAttend = await StaffAttendenceDate.findOne({
+      staffAttendDate: { $eq: `${req.body.staffAttendDate}` },
     });
+    if (existSAttend) {
+      res.status(200).send({ message: "Attendence Alreay Exists" });
+    } else {
+      const department = await Department.findById({ _id: did });
+      const staffAttendReg = await new StaffAttendence({});
+      const staffAttendDate = await new StaffAttendenceDate({ ...req.body });
+      staffAttendDate.department = department;
+      staffAttendReg.department = department;
+      await staffAttendDate.save();
+      await staffAttendReg.save();
+      res.status(200).send({
+        message: "Staff Attendence Register is Ready",
+        staffAttendDate,
+        staffAttendReg,
+      });
+    }
   }
 });
 
@@ -2252,7 +2325,7 @@ app.post("/student/:sid/checklist/:cid", isLoggedIn, async (req, res) => {
 
 app.post("/user-register", async (req, res) => {
   const { username } = req.body;
-  const admins = await Admin.findById({ _id: "61efea4f73428a7ef8708c2c" });
+  const admins = await Admin.findById({ _id: "61f6218bc44ebe64f40be27f" });
   const existAdmin = await Admin.findOne({ adminUserName: username });
   const existInstitute = await InstituteAdmin.findOne({ name: username });
   const existUser = await User.findOne({ username: username });
@@ -2395,7 +2468,6 @@ app.get("/userdashboard/:id", async (req, res) => {
     .populate("userFollowers")
     .populate("userFollowing")
     .populate("userCircle")
-    .populate("InstituteReferals")
     .populate({
       path: "userInstituteFollowing",
       populate: {
@@ -2417,7 +2489,20 @@ app.get("/userdashboard/:id", async (req, res) => {
       },
     })
     .populate("InstituteReferals")
-    .populate("saveUserInsPost");
+    .populate("saveUserInsPost")
+    .populate({
+      path: "role",
+      populate: {
+        path: "userSelectStaffRole",
+      },
+    })
+    .populate("InstituteReferals")
+    .populate({
+      path: "role",
+      populate: {
+        path: "userSelectStudentRole",
+      },
+    });
   res.status(200).send({ message: "Your User", user });
 });
 
