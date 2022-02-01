@@ -1202,6 +1202,17 @@ app.get("/subject-detail/:suid", async (req, res) => {
     .send({ message: " Subject & class Data", subData, classData });
 });
 
+app.get("/subject-detail/:suid", async (req, res) => {
+  const { suid } = req.params;
+  const subData = await Subject.findById({ _id: suid }).populate("class");
+  let classId = subData.class._id;
+  classData = await Class.findById({ _id: classId }).populate("ApproveStudent");
+  res
+    .status(200)
+    .send({ message: " Subject & class Data", subData, classData });
+});
+
+// Marks Submit and Save of Student
 // Marks Submit and Save of Student
 app.post("/student/:sid/marks/:eid/:marks", async (req, res) => {
   const { sid, eid, marks } = req.params;
@@ -1215,11 +1226,14 @@ app.post("/student/:sid/marks/:eid/:marks", async (req, res) => {
     examObtainMarks: marks,
     examMarksStatus: "Updated",
   };
+  // console.log(examMarks);
   student.studentMarks.push(examMarks);
   await student.save();
-  console.log(examMarks);
+  // console.log(examMarks);
   res.status(200).send({ message: "Successfully Marks Save" });
+  // console.log("Successfully Marks Save");
 });
+
 ///////////////////////////////////////////////////////
 
 // app.post("/ins/:id/department/:did/batch/:bid", async (req, res) => {
@@ -1668,12 +1682,18 @@ app.post("/student/status", isLoggedIn, async (req, res) => {
 });
 
 // Staff Designation Data in members tab at User
+// Staff Designation Data in members tab at User
 app.get("/staffdesignationdata/:sid", isLoggedIn, async (req, res) => {
   const { sid } = req.params;
   const staff = await Staff.findById({ _id: sid })
     .populate("staffDepartment")
     .populate("staffClass")
-    .populate("staffSubject")
+    .populate({
+      path: "staffSubject",
+      populate: {
+        path: "class",
+      },
+    })
     .populate({
       path: "institute",
     });
