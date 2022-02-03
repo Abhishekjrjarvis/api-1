@@ -79,8 +79,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(
   cors({
-    origin: "http://44.200.201.35:3000",
-    // origin: "http://localhost:3000",
+    // origin: "http://44.200.201.35:3000",
+    origin: "http://localhost:3000",
     methods: ["GET", "POST", "PUT"],
     credentials: true,
   })
@@ -234,10 +234,10 @@ app.post("/admin/:aid/reject/ins/:id", isLoggedIn, async (req, res) => {
 // Institute Admin Routes
 
 // Institute Creation
-//for global user admin "61f8c0bb25f4b9daa22abd15"
+//for global user admin "61fb54de68443afe717ed88b"
 //for local my system "61efea4f73428a7ef8708c2c"
 app.post("/ins-register", async (req, res) => {
-  const admins = await Admin.findById({ _id: "61f8c0bb25f4b9daa22abd15" });
+  const admins = await Admin.findById({ _id: "61fb54de68443afe717ed88b" });
   const existInstitute = await InstituteAdmin.findOne({ name: req.body.name });
   const existAdmin = await Admin.findOne({ adminUserName: req.body.name });
   const existUser = await User.findOne({ username: req.body.name });
@@ -396,7 +396,12 @@ app.get("/insdashboard/:id", async (req, res) => {
       })
       .populate("announcement")
       .populate("staff")
-      .populate("ApproveStaff")
+      .populate({
+        path: "ApproveStaff",
+        populate: {
+          path: "user",
+        },
+      })
       .populate({
         path: "depart",
         populate: {
@@ -408,7 +413,12 @@ app.get("/insdashboard/:id", async (req, res) => {
       .populate("classRooms")
       .populate("student")
       .populate("ApproveStudent")
-      .populate("saveInsPost")
+      .populate({
+        path: "saveInsPost",
+        populate: {
+          path: "institute",
+        },
+      })
       .populate({
         path: "posts",
         populate: {
@@ -958,8 +968,20 @@ app.get("/department/:did", async (req, res) => {
   const department = await Department.findById({ _id: did })
     .populate({ path: "dHead" })
     .populate("batches")
-    .populate({ path: "departmentSelectBatch" })
-    .populate({ path: "userBatch" });
+    .populate({
+      path: "departmentSelectBatch",
+      populate: {
+        path: "classroom",
+        populate: {
+          path: "ApproveStudent",
+        },
+      },
+    })
+    .populate({
+      path: "userBatch",
+    });
+
+  console.log(department);
   res.status(200).send({ message: "Department Data", department });
 });
 
@@ -1040,26 +1062,32 @@ app.post(
   "/ins/:id/departmentmasterclass/:did/batch/:bid",
   isLoggedIn,
   async (req, res) => {
-    const { id } = req.params;
+    const { id, did } = req.params;
     const { classTitle, className } = req.body;
     const institute = await InstituteAdmin.findById({ _id: id });
+    const department = await Department.findById({ _id: did });
     const classroomMaster = await new ClassMaster({
       className: className,
       classTitle: classTitle,
       institute: institute._id,
+      department: did,
     });
+    department.departmentClassMasters.push(classroomMaster);
     await classroomMaster.save();
+    await department.save();
     res
       .status(200)
       .send({ message: "Successfully Created MasterClasses", classroomMaster });
   }
 );
+
 app.post(
   "/ins/:id/department/:did/batch/:bid",
   isLoggedIn,
   async (req, res) => {
     const { id, did, bid } = req.params;
-    const { sid, classTitle, className, classCode, mcId } = req.body;
+    const { sid, classTitle, className, classCode, classHeadTitle, mcId } =
+      req.body;
     const institute = await InstituteAdmin.findById({ _id: id });
     const masterClass = await ClassMaster.findById({ _id: mcId });
     const mCName = masterClass.className;
@@ -1069,8 +1097,10 @@ app.post(
       path: "dHead",
     });
     const classRoom = await new Class({
+      masterClassName: mcId,
       className: `${mCName}-${className}`,
       classTitle: classTitle,
+      classHeadTitle: classHeadTitle,
       classCode: classCode,
     });
     institute.classRooms.push(classRoom);
@@ -1078,7 +1108,6 @@ app.post(
     batch.classroom.push(classRoom);
     masterClass.classDivision.push(classRoom);
     if (String(depart.dHead._id) == String(staff._id)) {
-      // console.log("Same as department Head");
     } else {
       depart.departmentChatGroup.push(staff);
     }
@@ -1552,13 +1581,21 @@ app.post(
   "/ins/:id/departmentmastersubject/:did/batch/:bid",
   isLoggedIn,
   async (req, res) => {
-    const { id } = req.params;
+    const { id, did, bid } = req.params;
     const { subjectName } = req.body;
     const institute = await InstituteAdmin.findById({ _id: id });
+    const departmentData = await Department.findById({ _id: did });
+    const batchData = await Batch.findById({ _id: bid });
     const subjectMaster = await new SubjectMaster({
       subjectName: subjectName,
       institute: institute._id,
+      batch: bid,
+      department: did,
     });
+    await departmentData.departmentSubjectMasters.push(subjectMaster);
+    await batchData.subjectMasters.push(subjectMaster);
+    await departmentData.save();
+    await batchData.save();
     await subjectMaster.save();
     res
       .status(200)
@@ -2343,9 +2380,91 @@ app.post("/student/:sid/checklist/:cid", isLoggedIn, async (req, res) => {
 });
 // End User Routes
 
-app.post("/user-register", async (req, res) => {
-  const { username } = req.body;
-  const admins = await Admin.findById({ _id: "61f8c0bb25f4b9daa22abd15" });
+// app.post("/user-register", async (req, res) => {
+//   const { username } = req.body;
+//   const admins = await Admin.findById({ _id: "61fb54de68443afe717ed88b" });
+//   const existAdmin = await Admin.findOne({ adminUserName: username });
+//   const existInstitute = await InstituteAdmin.findOne({ name: username });
+//   const existUser = await User.findOne({ username: username });
+//   if (existAdmin) {
+//     res.status(200).send({ message: "Username already exists" });
+//   } else if (existInstitute) {
+//     res.status(200).send({ message: "Username already exists" });
+//   } else {
+//     // const users = await User.findOne({ $or: [{ username: req.body.username }, { userPhoneNumber: req.body.userPhoneNumber } ]})
+//     if (existUser) {
+//       res.send({ message: "Username already exists" });
+//     } else {
+//       const user = await new User({ ...req.body });
+//       admins.users.push(user);
+//       await admins.save();
+//       await user.save();
+//       res.send({ message: "Successfully user created...", user });
+//     }
+//   }
+// });
+
+app.post("/user-detail", async (req, res) => {
+  const { userPhoneNumber, status } = req.body;
+  // console.log(req.body);
+  if (userPhoneNumber) {
+    if (status === "Not Verified") {
+      client.verify
+        .services(data.SERVICEID)
+        .verifications.create({
+          to: `+91${userPhoneNumber}`,
+          channel: "sms",
+        })
+        .then((data) => {
+          res.status(200).send({
+            message: "code will be send to registered mobile number",
+            userPhoneNumber,
+          });
+        });
+    } else {
+      res.send({ message: "User will be verified..." });
+    }
+  } else {
+    res.send({ message: "Invalid Phone No." });
+  }
+});
+
+app.post("/user-detail-verify/:id", async (req, res) => {
+  const { id } = req.params;
+  client.verify
+    .services(data.SERVICEID)
+    .verificationChecks.create({
+      to: `+91${id}`,
+      code: req.body.userOtpCode,
+    })
+    .then(async (data) => {
+      if (data.status === "approved") {
+        var userStatus = data.status;
+        res.send({ message: "OTP verified", id, userStatus });
+      } else {
+      }
+    })
+    .catch((e) => {
+      console.log("something went wrong");
+    });
+});
+
+// app.get("/profile-creation", (req, res) => {
+//   res.render("ProfileCreation");
+// });
+
+app.post("/profile-creation/:id", async (req, res) => {
+  const { id } = req.params;
+  const admins = await Admin.findById({ _id: "61fb54de68443afe717ed88b" });
+  const {
+    userLegalName,
+    userGender,
+    userAddress,
+    userBio,
+    userDateOfBirth,
+    username,
+    status,
+  } = req.body;
   const existAdmin = await Admin.findOne({ adminUserName: username });
   const existInstitute = await InstituteAdmin.findOne({ name: username });
   const existUser = await User.findOne({ username: username });
@@ -2358,79 +2477,26 @@ app.post("/user-register", async (req, res) => {
     if (existUser) {
       res.send({ message: "Username already exists" });
     } else {
-      const user = await new User({ ...req.body });
+      const user = await new User({
+        userLegalName: userLegalName,
+        userGender: userGender,
+        userAddress: userAddress,
+        userBio: userBio,
+        userDateOfBirth: userDateOfBirth,
+        username: username,
+        userStatus: "Approved",
+        userPhoneNumber: id,
+        photoId: "1",
+        coverId: "2",
+      });
       admins.users.push(user);
       await admins.save();
       await user.save();
-      res.send({ message: "Successfully user created...", user });
+      res
+        .status(200)
+        .send({ message: "Profile Successfully Created...", user });
     }
   }
-});
-
-app.post("/user-detail/:uid", async (req, res) => {
-  const { uid } = req.params;
-  // console.log(req.params);
-  const user = await User.findById({ _id: uid });
-  if (user) {
-    if (user.userStatus === "Not Verified") {
-      client.verify
-        .services(data.SERVICEID)
-        .verifications.create({
-          to: `+91${user.userPhoneNumber}`,
-          channel: "sms",
-        })
-        .then((data) => {
-          res.status(200).send({
-            message: "code will be send to registered mobile number",
-            user,
-          });
-        });
-    } else {
-      res.send({ message: "User will be verified..." });
-    }
-  } else {
-    res.send({ message: "Invalid Phone No." });
-  }
-});
-
-app.post("/user-detail-verify/:uid", async (req, res) => {
-  const { uid } = req.params;
-  const user = await User.findById({ _id: uid });
-  client.verify
-    .services(data.SERVICEID)
-    .verificationChecks.create({
-      to: `+91${user.userPhoneNumber}`,
-      code: req.body.userOtpCode,
-    })
-    .then((data) => {
-      user.userStatus = data.status;
-      // console.log("Thanks For Confirmations...");
-      user.save();
-      res.send({ message: "Status will be Approved...", user });
-    });
-});
-
-app.get("/profile-creation", (req, res) => {
-  res.render("ProfileCreation");
-});
-
-app.post("/profile-creation/:id", async (req, res) => {
-  const { id } = req.params;
-  const { userLegalName, userGender, userAddress, userBio, userDateOfBirth } =
-    req.body;
-  // console.log(req.body);
-  const user = await User.findById({ _id: id });
-  user.userLegalName = userLegalName;
-  user.userGender = userGender;
-  user.userAddress = userAddress;
-  user.userBio = userBio;
-  user.userDateOfBirth = userDateOfBirth;
-  user.photoId = "1";
-  user.coverId = "2";
-
-  await user.save();
-  req.session.user = user;
-  res.status(200).send({ message: "Profile Successfully Created...", user });
 });
 
 app.get("/create-user-password", (req, res) => {
@@ -2450,6 +2516,7 @@ app.post("/create-user-password/:id", async (req, res) => {
     if (userPassword === userRePassword) {
       user.userPassword = hashUserPass;
       await user.save();
+      req.session.user = user;
       res.send({ message: "Password successfully created...", user });
     } else {
       res.send({ message: "Invalid Password Combination" });
@@ -2501,7 +2568,12 @@ app.get("/userdashboard/:id", async (req, res) => {
         path: "studentClass",
       },
     })
-    .populate("saveUsersPost")
+    .populate({
+      path: "saveUsersPost",
+      populate: {
+        path: "user",
+      },
+    })
     .populate({
       path: "userPosts",
       populate: {
@@ -2509,7 +2581,12 @@ app.get("/userdashboard/:id", async (req, res) => {
       },
     })
     .populate("InstituteReferals")
-    .populate("saveUserInsPost")
+    .populate({
+      path: "saveUserInsPost",
+      populate: {
+        path: "institute",
+      },
+    })
     .populate({
       path: "role",
       populate: {
@@ -2521,6 +2598,18 @@ app.get("/userdashboard/:id", async (req, res) => {
       path: "role",
       populate: {
         path: "userSelectStudentRole",
+      },
+    })
+    .populate({
+      path: "userInstituteFollowing",
+      populate: {
+        path: "posts",
+      },
+    })
+    .populate({
+      path: "userFollowing",
+      populate: {
+        path: "userPosts",
       },
     });
   res.status(200).send({ message: "Your User", user });

@@ -12,6 +12,7 @@ const Behaviour = require("./Behaviour");
 const studentSchema = new mongoose.Schema({
   studentCode: { type: String },
   studentProfilePhoto: { type: String },
+  photoId: { type: String },
   studentFirstName: { type: String },
   studentMiddleName: { type: String },
   studentLastName: { type: String },
