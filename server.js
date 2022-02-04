@@ -238,7 +238,7 @@ app.post("/admin/:aid/reject/ins/:id", isLoggedIn, async (req, res) => {
 //for global user admin "61fb54de68443afe717ed88b"
 //for local my system "61efea4f73428a7ef8708c2c"
 app.post("/ins-register", async (req, res) => {
-  const admins = await Admin.findById({ _id: "61efea4f73428a7ef8708c2c" });
+  const admins = await Admin.findById({ _id: "61fb54de68443afe717ed88b" });
   const existInstitute = await InstituteAdmin.findOne({ name: req.body.name });
   const existAdmin = await Admin.findOne({ adminUserName: req.body.name });
   const existUser = await User.findOne({ username: req.body.name });
@@ -2370,7 +2370,7 @@ app.post("/user-detail-verify/:id", async (req, res) => {
 
 app.post("/profile-creation/:id", async (req, res) => {
   const { id } = req.params;
-  const admins = await Admin.findById({ _id: "61efea4f73428a7ef8708c2c" });
+  const admins = await Admin.findById({ _id: "61fb54de68443afe717ed88b" });
   const {
     userLegalName,
     userGender,
