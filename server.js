@@ -58,7 +58,8 @@ const { uploadFile, getFileStream } = require("./S3Configuration");
 const dburl =
   "mongodb+srv://new-user-web-app:6o2iZ1OFMybEtVDK@cluster0.sdhjn.mongodb.net/myFirstDatabase?retryWrites=true&w=majority";
 
-// const dburl = "mongodb://localhost:27017/Erp_app";
+// const dburl = "mongodb://localhost:27017/Erp";
+// const dburl = "mongodb://localhost:27017/Erp_app_25-Jan";
 
 mongoose
   .connect(dburl, {
@@ -79,7 +80,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(
   cors({
-    origin: "http://34.207.166.223:3000",
+    origin: "http://44.200.201.35:3000",
     // origin: "http://localhost:3000",
     methods: ["GET", "POST", "PUT"],
     credentials: true,
@@ -237,7 +238,7 @@ app.post("/admin/:aid/reject/ins/:id", isLoggedIn, async (req, res) => {
 //for global user admin "61fb54de68443afe717ed88b"
 //for local my system "61efea4f73428a7ef8708c2c"
 app.post("/ins-register", async (req, res) => {
-  const admins = await Admin.findById({ _id: "61fb54de68443afe717ed88b" });
+  const admins = await Admin.findById({ _id: "61efea4f73428a7ef8708c2c" });
   const existInstitute = await InstituteAdmin.findOne({ name: req.body.name });
   const existAdmin = await Admin.findOne({ adminUserName: req.body.name });
   const existUser = await User.findOne({ username: req.body.name });
@@ -477,7 +478,7 @@ app.post(
     const post = new Post({ ...req.body });
     post.imageId = "0";
     post.CreateImage = results.key;
-    console.log("Tis is institute : ", post);
+    // console.log("Tis is institute : ", post);
     institute.posts.push(post);
     post.institute = institute._id;
     await institute.save();
@@ -981,7 +982,7 @@ app.get("/department/:did", async (req, res) => {
       path: "userBatch",
     });
 
-  console.log(department);
+  // console.log(department);
   res.status(200).send({ message: "Department Data", department });
 });
 
@@ -1021,40 +1022,11 @@ app.post("/addbatch/:did", isLoggedIn, async (req, res) => {
   res.status(200).send({ message: "batch data", batch });
 });
 
-// Institute Class Creation In Batch
-// for examination
-
-app.get("/ins/:id/departmentmastersubject/", async (req, res) => {
-  const { id } = req.params;
-  const subjectMaster = await SubjectMaster.find({ institute: id });
-  res.status(200).send({ message: "SubjectMaster Are here", subjectMaster });
-});
-
-// Create Master Subject data
-
-app.post(
-  "/ins/:id/departmentmastersubject/:did/batch/:bid",
-  isLoggedIn,
-  async (req, res) => {
-    const { id } = req.params;
-    const { subjectName } = req.body;
-    const institute = await InstituteAdmin.findById({ _id: id });
-    const subjectMaster = await new SubjectMaster({
-      subjectName: subjectName,
-      institute: institute._id,
-    });
-    await subjectMaster.save();
-    res
-      .status(200)
-      .send({ message: "Successfully Created Master Subject", subjectMaster });
-  }
-);
-
 // / Master Class Creator Route
 // Get all ClassMaster Data
-app.get("/ins/:id/departmentmasterclass/", async (req, res) => {
-  const { id } = req.params;
-  const classMaster = await ClassMaster.find({ institute: id });
+app.get("/ins/:id/departmentmasterclass/:did", async (req, res) => {
+  const { id, did } = req.params;
+  const classMaster = await ClassMaster.find({ department: did });
   res.status(200).send({ message: "ClassMaster Are here", classMaster });
 });
 // Create Master Class Data
@@ -1098,7 +1070,7 @@ app.post(
     });
     const classRoom = await new Class({
       masterClassName: mcId,
-      className: `${mCName}-${className}`,
+      className: mCName,
       classTitle: classTitle,
       classHeadTitle: classHeadTitle,
       classCode: classCode,
@@ -1263,53 +1235,6 @@ app.post("/student/:sid/marks/:eid/:marks", async (req, res) => {
   // console.log("Successfully Marks Save");
 });
 
-///////////////////////////////////////////////////////
-
-// app.post("/ins/:id/department/:did/batch/:bid", async (req, res) => {
-//   const { id, did, bid } = req.params;
-//   const { sid, classTitle, className, classCode } = req.body;
-//   const institute = await InstituteAdmin.findById({ _id: id });
-//   const batch = await Batch.findById({ _id: bid });
-//   const staff = await Staff.findById({ _id: sid });
-//   const depart = await Department.findById({ _id: did }).populate({
-//     path: "dHead",
-//   });
-//   const classRoom = await new Class({
-//     className: className,
-//     classTitle: classTitle,
-//     classCode: classCode,
-//   });
-//   institute.classRooms.push(classRoom);
-//   classRoom.institute = institute;
-//   batch.classroom.push(classRoom);
-//   if (String(depart.dHead._id) == String(staff._id)) {
-//     console.log("Same as department Head");
-//   } else {
-//     depart.departmentChatGroup.push(staff);
-//   }
-//   classRoom.batch = batch;
-//   batch.batchStaff.push(staff);
-//   staff.batches = batch;
-//   staff.staffClass.push(classRoom);
-//   classRoom.classTeacher = staff;
-//   console.log(classRoom);
-//   await institute.save();
-//   await batch.save();
-//   await staff.save();
-//   await classRoom.save();
-//   await depart.save();
-//   res.status(200).send({
-//     message: "Successfully Created Class",
-//     classRoom,
-//     staff,
-//     batch,
-//     institute,
-//     depart,
-//   });
-// });
-
-// Get Institute Classes Data
-
 app.get("/class/:cid", async (req, res) => {
   const { cid } = req.params;
   const classes = await Class.findById({ _id: cid })
@@ -1341,26 +1266,22 @@ app.post(
     const subject = await new Subject({
       subjectTitle: subjectTitle,
       subjectName: subjectMaster.subjectName,
+      subjectMasterName: subjectMaster._id,
     });
     classes.subject.push(subject);
     subjectMaster.subjects.push(subject);
     subject.class = classes;
     if (String(classes.classTeacher._id) == String(staff._id)) {
-      // console.log("Same as Subject Teacher");
     } else {
       batch.batchStaff.push(staff);
       staff.batches = batch;
     }
     if (String(depart.dHead._id) == String(staff._id)) {
-      // console.log("Same as department Head");
     } else {
       depart.departmentChatGroup.push(staff);
     }
     staff.staffSubject.push(subject);
     subject.subjectTeacherName = staff;
-    // console.log(staff._id);
-    // console.log(classes.classTeacher._id);
-    // console.log(batch.batchStaff);
     await subjectMaster.save();
     await classes.save();
     await batch.save();
@@ -1564,18 +1485,12 @@ app.get("/ins/:id/allclassdata/:did/batch/:bid", async (req, res) => {
 
 // get all Master Subject Data
 
-app.get("/ins/:id/departmentmastersubject/", async (req, res) => {
-  const { id } = req.params;
-  const subjectMaster = await SubjectMaster.find({ institute: id });
+app.get("/ins/:id/departmentmastersubject/:did", async (req, res) => {
+  const { id, did } = req.params;
+  const subjectMaster = await SubjectMaster.find({ department: did });
   res.status(200).send({ message: "SubjectMaster Are here", subjectMaster });
 });
 
-// get all Master Class Data
-app.get("/ins/:id/departmentmasterclass/", async (req, res) => {
-  const { id } = req.params;
-  const classMaster = await ClasstMaster.find({ institute: id });
-  res.status(200).send({ message: "ClassMaster Are here", ClassMaster });
-});
 // Create Master Subject data
 app.post(
   "/ins/:id/departmentmastersubject/:did/batch/:bid",
@@ -1759,9 +1674,9 @@ app.get("/studentdesignationdata/:sid", async (req, res) => {
 
 // Staff Department Info
 
-app.get("/staffdepartment/:sid", async (req, res) => {
-  const { sid } = req.params;
-  const department = await Department.findById({ _id: sid })
+app.get("/staffdepartment/:did", async (req, res) => {
+  const { did } = req.params;
+  const department = await Department.findById({ _id: did })
     .populate("batches")
     .populate({
       path: "dHead",
@@ -1770,7 +1685,7 @@ app.get("/staffdepartment/:sid", async (req, res) => {
       path: "institute",
     })
     .populate("checklists")
-    .populate({ path: "userBatch" });
+    .populate({ path: "userBatch", populate: "classroom" });
   res.status(200).send({ message: "Department Profile Data", department });
 });
 
@@ -2367,7 +2282,7 @@ app.post("/department/holiday/:did", isLoggedIn, async (req, res) => {
 
 app.post("/student/:sid/checklist/:cid", isLoggedIn, async (req, res) => {
   const { sid, cid } = req.params;
-  console.log(req.params);
+  // console.log(req.params);
   const student = await Student.findById({ _id: sid });
   const checklist = await Checklist.findById({ _id: cid });
   student.checklist.push(checklist);
@@ -2455,7 +2370,7 @@ app.post("/user-detail-verify/:id", async (req, res) => {
 
 app.post("/profile-creation/:id", async (req, res) => {
   const { id } = req.params;
-  const admins = await Admin.findById({ _id: "61fb54de68443afe717ed88b" });
+  const admins = await Admin.findById({ _id: "61efea4f73428a7ef8708c2c" });
   const {
     userLegalName,
     userGender,
@@ -2765,7 +2680,7 @@ app.post("/user/post/unlike", isLoggedIn, async (req, res) => {
   if (user_sessions) {
     userpost.userlike.splice(user_sessions._id, 1);
     await userpost.save();
-    console.log("delete");
+    // console.log("delete");
     res.status(200).send({ message: "Removed from Likes", userpost });
   } else if (institute_sessions) {
     userpost.userlikeIns.splice(institute_sessions._id, 1);
