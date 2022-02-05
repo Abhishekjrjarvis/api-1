@@ -29,6 +29,12 @@ const batchSchema = new mongoose.Schema({
       ref: "Class",
     },
   ],
+  batchExam: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Exam"
+    }
+  ],
   batchStaff: [
     {
       type: mongoose.Schema.Types.ObjectId,

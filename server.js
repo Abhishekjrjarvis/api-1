@@ -59,7 +59,7 @@ const dburl =
   "mongodb+srv://new-user-web-app:6o2iZ1OFMybEtVDK@cluster0.sdhjn.mongodb.net/myFirstDatabase?retryWrites=true&w=majority";
 
 // const dburl = "mongodb://localhost:27017/Erp";
-// const dburl = "mongodb://localhost:27017/Erp_app_25-Jan";
+// const dburl = "mongodb://localhost:27017/Erp_app_1-Feb";
 
 mongoose
   .connect(dburl, {
@@ -236,7 +236,7 @@ app.post("/admin/:aid/reject/ins/:id", isLoggedIn, async (req, res) => {
 
 // Institute Creation
 //for global user admin "61fb54de68443afe717ed88b"
-//for local my system "61efea4f73428a7ef8708c2c"
+//for local my system "61fd7c329926f9f010d96809"
 app.post("/ins-register", async (req, res) => {
   const admins = await Admin.findById({ _id: "61fb54de68443afe717ed88b" });
   const existInstitute = await InstituteAdmin.findOne({ name: req.body.name });
@@ -1128,8 +1128,9 @@ app.get("/exam/subject/:suid", async (req, res) => {
   res.status(200).send({ message: "Subject Exam List", subExamList });
 });
 
+// Route For Exam Creation
 app.post(
-  "/ins/:id/department/function/examcreation/:did/batch/:bid/",
+  "/ins/:id/department/function/exam/creation/:did/batch/:bid",
   isLoggedIn,
   async (req, res) => {
     const { id, did, bid } = req.params;
@@ -1144,11 +1145,20 @@ app.post(
       examTime,
       totalMarks,
     } = req.body;
+
     const institute = await InstituteAdmin.findById({ _id: id });
     const batch = await Batch.findById({ _id: bid });
-    const subject = await Subject.findById({ _id: suid });
     const depart = await Department.findById({ _id: did });
-    const classRoom = await Class.findById({ _id: cid });
+    const classRoomData = await Class.findById({ _id: cid }).populate({
+      path: "subject",
+      populate: {
+        path: "subjectMasterName",
+      },
+    });
+    const sub = classRoomData.subject;
+    let subjectObj = sub.find((e) => suid == e.subjectMasterName._id);
+
+    const subject = await Subject.findById({ _id: subjectObj._id });
 
     const newExam = await new Exam({
       institute: id,
@@ -1162,19 +1172,17 @@ app.post(
       examForClass: cid,
       examForDepartment: depart,
       totalMarks: totalMarks,
-      subject: suid,
+      subject: subject,
       subTeacher: subject.subjectTeacherName,
     });
-
     await newExam.save();
-    // console.log(newExam, "Exam Was Saved");
     subject.subjectExams.push(newExam);
     batch.batchExam.push(newExam);
-    classRoom.classExam.push(newExam);
+    classRoomData.classExam.push(newExam);
     depart.departmentExam.push(newExam);
     await batch.save();
     await subject.save();
-    await classRoom.save();
+    await classRoomData.save();
     await depart.save();
     res.status(200).send({ message: "Successfully Created Exam", newExam });
   }
@@ -1459,27 +1467,22 @@ app.post("/ins/:id/student/:cid/reject/:sid", isLoggedIn, async (req, res) => {
   });
 });
 
-// Get all department Batch class Data & Subject
+// Get Batch Details class and Subject data
 app.get("/ins/:id/allclassdata/:did/batch/:bid", async (req, res) => {
   const { id, did, bid } = req.params;
-  const classroom = await Class.find({ batch: bid }).populate({
-    path: "subject",
-  });
-
-  let row = classroom.length;
-  let subject = [];
-
-  for (let i = 0; i < row; i++) {
-    let d = classroom[i].subject;
-    for (let n = 0; n < d.length; n++) {
-      let b = classroom[i].subject[n];
-      subject.push(b);
-    }
-  }
+  const batch = await Batch.findById({ _id: bid })
+    .populate({
+      path: "subjectMasters",
+      populate: {
+        path: "subjects",
+      },
+    })
+    .populate({
+      path: "classroom",
+    });
   res.status(200).send({
-    message: "All Department class and Subject data",
-    classroom,
-    subject,
+    message: "Batch Details class and Subject data",
+    batch,
   });
 });
 
