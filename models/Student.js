@@ -35,6 +35,7 @@ const studentSchema = new mongoose.Schema({
   studentAadharCard: { type: String },
   studentStatus: { type: String, default: "Not Approved" },
   studentBehaviourReportStatus: { type: String, default: "Not Ready" },
+  studentFinalReportMackStatus: { type: String, default: "Not Ready" },
   studentBehaviourStatus: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Behaviour",
@@ -57,6 +58,9 @@ const studentSchema = new mongoose.Schema({
       examId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Exam",
+      },
+      examWeight: {
+        type: "Number"
       },
       examTotalMarks: {
         type: "Number",

@@ -60,6 +60,7 @@ const dburl =
 
 // const dburl = "mongodb://localhost:27017/Erp";
 // const dburl = "mongodb://localhost:27017/Erp_app_1-Feb";
+// const dburl = "mongodb://localhost:27017/Erp_test01";
 
 mongoose
   .connect(dburl, {
@@ -80,8 +81,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(
   cors({
-    origin: "http://44.200.201.35:3000",
-    // origin: "http://localhost:3000",
+    // origin: "http://44.200.201.35:3000",
+    origin: ["http://localhost:3000", "http://44.200.201.35:3000"],
     methods: ["GET", "POST", "PUT"],
     credentials: true,
   })
@@ -238,7 +239,7 @@ app.post("/admin/:aid/reject/ins/:id", isLoggedIn, async (req, res) => {
 //for global user admin "61fb54de68443afe717ed88b"
 //for local my system "61fd7c329926f9f010d96809"
 app.post("/ins-register", async (req, res) => {
-  const admins = await Admin.findById({ _id: "61fb54de68443afe717ed88b" });
+  const admins = await Admin.findById({ _id: "61fd7c329926f9f010d96809" });
   const existInstitute = await InstituteAdmin.findOne({ name: req.body.name });
   const existAdmin = await Admin.findOne({ adminUserName: req.body.name });
   const existUser = await User.findOne({ username: req.body.name });
@@ -1222,7 +1223,7 @@ app.get("/subject-detail/:suid", async (req, res) => {
 });
 
 // Marks Submit and Save of Student
-// Marks Submit and Save of Student
+
 app.post("/student/:sid/marks/:eid/:marks", async (req, res) => {
   const { sid, eid, marks } = req.params;
 
@@ -1231,16 +1232,14 @@ app.post("/student/:sid/marks/:eid/:marks", async (req, res) => {
 
   const examMarks = {
     examId: eid,
+    examWeight: exam.examWeight,
     examTotalMarks: exam.totalMarks,
     examObtainMarks: marks,
     examMarksStatus: "Updated",
   };
-  // console.log(examMarks);
   student.studentMarks.push(examMarks);
   await student.save();
-  // console.log(examMarks);
   res.status(200).send({ message: "Successfully Marks Save" });
-  // console.log("Successfully Marks Save");
 });
 
 app.get("/class/:cid", async (req, res) => {
@@ -2373,7 +2372,7 @@ app.post("/user-detail-verify/:id", async (req, res) => {
 
 app.post("/profile-creation/:id", async (req, res) => {
   const { id } = req.params;
-  const admins = await Admin.findById({ _id: "61fb54de68443afe717ed88b" });
+  const admins = await Admin.findById({ _id: "61fd7c329926f9f010d96809" });
   const {
     userLegalName,
     userGender,
