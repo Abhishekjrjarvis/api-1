@@ -58,9 +58,8 @@ const { uploadFile, getFileStream } = require("./S3Configuration");
 const dburl =
   "mongodb+srv://new-user-web-app:6o2iZ1OFMybEtVDK@cluster0.sdhjn.mongodb.net/myFirstDatabase?retryWrites=true&w=majority";
 
-// const dburl = "mongodb://localhost:27017/Erp";
+// const dburl = "mongodb://localhost:27017/Erp_app";
 // const dburl = "mongodb://localhost:27017/Erp_app_1-Feb";
-// const dburl = "mongodb://localhost:27017/Erp_test01";
 
 mongoose
   .connect(dburl, {
@@ -81,8 +80,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(
   cors({
-    // origin: "http://44.200.201.35:3000",
-    origin: ["http://localhost:3000", "http://44.200.201.35:3000"],
+    origin: "http://44.200.201.35:3000",
+    // origin: "http://localhost:3000",
     methods: ["GET", "POST", "PUT"],
     credentials: true,
   })
@@ -236,10 +235,10 @@ app.post("/admin/:aid/reject/ins/:id", isLoggedIn, async (req, res) => {
 // Institute Admin Routes
 
 // Institute Creation
-//for global user admin "61fb54de68443afe717ed88b"
+//for global user admin "6207d47cb2389c695ddf00ac"
 //for local my system "61fd7c329926f9f010d96809"
 app.post("/ins-register", async (req, res) => {
-  const admins = await Admin.findById({ _id: "61fb54de68443afe717ed88b" });
+  const admins = await Admin.findById({ _id: "6207d47cb2389c695ddf00ac" });
   const existInstitute = await InstituteAdmin.findOne({ name: req.body.name });
   const existAdmin = await Admin.findOne({ adminUserName: req.body.name });
   const existUser = await User.findOne({ username: req.body.name });
@@ -261,6 +260,12 @@ app.post("/ins-register", async (req, res) => {
       res.send({ message: "Institute", institute });
     }
   }
+});
+
+app.get("/ins-register/doc/:key", async (req, res) => {
+  const key = req.params.key;
+  const readStream = getFileStream(key);
+  readStream.pipe(res);
 });
 
 //======================================================================//
@@ -516,6 +521,7 @@ app.post("/insprofiledisplay/:id", isLoggedIn, async (req, res) => {
   institute.insPrinciple = req.body.insPrinciple;
   institute.insStudentPresident = req.body.insStudentPresident;
   institute.insTrusty = req.body.insTrusty;
+  institute.insAdminClerk = req.body.insAdminClerk;
   await institute.save();
   res
     .status(200)
@@ -801,6 +807,7 @@ app.post("/post/like", isLoggedIn, async (req, res) => {
       // console.log("You already liked it user");
     } else {
       post.insUserLike.push(user_session._id);
+      console.log(post.insUserLike);
       await post.save();
       res.status(200).send({ message: "Added To Likes", post });
     }
@@ -931,15 +938,26 @@ app.post(
 // Institute Search for follow Institute Profile
 
 app.post("/ins-search-profile", isLoggedIn, async (req, res) => {
-  // try{
   const institute = await InstituteAdmin.findOne({
     insName: req.body.insSearchProfile,
   });
   res.status(200).send({ message: "Search Institute Here", institute });
-  // }
-  // catch{
-  //     res.status(401).send({ message: 'Bad Request'})
-  // }
+});
+
+app.post("/ins/staff/code", async (req, res) => {
+  const { InsId, code } = req.body;
+  const institute = await InstituteAdmin.findById({ _id: InsId });
+  institute.staffJoinCode = code;
+  await institute.save();
+  res.status(200).send({ message: "staff joining code", institute });
+});
+
+app.post("/ins/class/code", async (req, res) => {
+  const { classId, code } = req.body;
+  const classes = await Class.findById({ _id: classId });
+  classes.classCode = code;
+  await classes.save();
+  res.status(200).send({ message: "class joining code", classes });
 });
 
 // Institute To Institute Follow Handler
@@ -957,6 +975,23 @@ app.put("/follow-ins", async (req, res) => {
     institutes.following.push(req.body.followId);
     await sinstitute.save();
     await institutes.save();
+  }
+  // }
+});
+
+app.put("/unfollow-ins", async (req, res) => {
+  const institutes = await InstituteAdmin.findById({
+    _id: req.session.institute._id,
+  });
+  const sinstitute = await InstituteAdmin.findById({ _id: req.body.followId });
+
+  if (institutes.following.includes(req.body.followId)) {
+    sinstitute.followers.splice(req.session.institute._id, 1);
+    institutes.following.splice(req.body.followId, 1);
+    await sinstitute.save();
+    await institutes.save();
+  } else {
+    res.status(200).send({ message: "You Already UnFollow This Institute" });
   }
   // }
 });
@@ -989,11 +1024,11 @@ app.get("/department/:did", async (req, res) => {
 
 // Institute Batch in Department
 
-app.post("/:id/batchdetail", isLoggedIn, async (req, res) => {
-  const { id } = req.params;
+app.get("/:id/batchdetail/:bid", isLoggedIn, async (req, res) => {
+  const { id, bid } = req.params;
   const { batchDetail } = req.body;
   const department = await Department.findById({ _id: id });
-  const batches = await Batch.findById({ _id: batchDetail });
+  const batches = await Batch.findById({ _id: bid });
   department.departmentSelectBatch = batches;
   department.userBatch = batches;
   await department.save();
@@ -1021,6 +1056,18 @@ app.post("/addbatch/:did", isLoggedIn, async (req, res) => {
   await department.save();
   await batch.save();
   res.status(200).send({ message: "batch data", batch });
+});
+
+app.get("/search/insdashboard/staffdata/adh/:key", async (req, res) => {
+  const key = req.params.key;
+  const readStream = getFileStream(key);
+  readStream.pipe(res);
+});
+
+app.get("/search/insdashboard/studentdata/adh/:key", async (req, res) => {
+  const key = req.params.key;
+  const readStream = getFileStream(key);
+  readStream.pipe(res);
 });
 
 // / Master Class Creator Route
@@ -1123,6 +1170,12 @@ app.get("/exam/subject/:suid", async (req, res) => {
 
   const subject = await Subject.findById({ _id: suid }).populate({
     path: "subjectExams",
+    populate: {
+      path: "subject",
+      populate: {
+        path: "subjectName",
+      },
+    },
   });
   const subExamList = subject.subjectExams;
 
@@ -1131,60 +1184,92 @@ app.get("/exam/subject/:suid", async (req, res) => {
 
 // Route For Exam Creation
 app.post(
-  "/ins/:id/department/function/exam/creation/:did/batch/:bid",
-  isLoggedIn,
+  "/user/:id/department/function/exam/creation/:did/batch/:bid",
+  // isLoggedIn,
   async (req, res) => {
     const { id, did, bid } = req.params;
-    const {
-      suid,
-      cid,
-      examName,
-      examType,
-      examMode,
-      examWeight,
-      examDate,
-      examTime,
-      totalMarks,
-    } = req.body;
+    const { suid, examForClass, examName, examType, examMode, examWeight } =
+      req.body;
 
-    const institute = await InstituteAdmin.findById({ _id: id });
     const batch = await Batch.findById({ _id: bid });
     const depart = await Department.findById({ _id: did });
-    const classRoomData = await Class.findById({ _id: cid }).populate({
-      path: "subject",
-      populate: {
-        path: "subjectMasterName",
-      },
-    });
-    const sub = classRoomData.subject;
-    let subjectObj = sub.find((e) => suid == e.subjectMasterName._id);
-
-    const subject = await Subject.findById({ _id: subjectObj._id });
 
     const newExam = await new Exam({
-      institute: id,
-      batch: batch,
-      examType: examType,
       examName: examName,
+      examType: examType,
       examMode: examMode,
       examWeight: examWeight,
-      examDate: examDate,
-      examTime: examTime,
-      examForClass: cid,
+      batch: batch,
       examForDepartment: depart,
-      totalMarks: totalMarks,
-      subject: subject,
-      subTeacher: subject.subjectTeacherName,
+      examForClass: examForClass,
+      subject: suid,
     });
+
     await newExam.save();
-    subject.subjectExams.push(newExam);
     batch.batchExam.push(newExam);
-    classRoomData.classExam.push(newExam);
-    depart.departmentExam.push(newExam);
     await batch.save();
-    await subject.save();
-    await classRoomData.save();
+    depart.departmentExam.push(newExam);
     await depart.save();
+
+    // Push Exam In ClassRoom
+    let studentList = [];
+    let arry = [];
+    for (let i = 0; i < examForClass.length; i++) {
+      const classRoomData = await Class.findById({
+        _id: examForClass[i],
+      }).populate({
+        path: "subject",
+        populate: {
+          path: "subjectMasterName",
+        },
+      });
+
+      classRoomData.classExam.push(newExam);
+      classRoomData.save();
+
+      // For Exam save in Subject
+      let exSub = classRoomData.subject;
+      let subArr = [];
+      for (let j = 0; j < suid.length; j++) {
+        let subjectObj = exSub.filter((e) => {
+          return e.subjectMasterName._id == suid[j].subjectName;
+        });
+
+        for (let k = 0; k < subjectObj.length; k++) {
+          subArr.push(subjectObj[k]);
+        }
+      }
+      for (let i = 0; i < subArr.length; i++) {
+        arry.push(subArr[i]);
+      }
+      // find Class room Approve student and Push Exam in each student
+      let stud = classRoomData.ApproveStudent;
+      for (let i = 0; i < stud.length; i++) {
+        let data = stud[i];
+        studentList.push(data);
+      }
+    }
+    // Exam Push in Student Model
+    for (let i = 0; i < studentList.length; i++) {
+      stuData = await Student.findById({ _id: studentList[i] });
+
+      studDataUpdate = {
+        examId: newExam._id,
+        allSubjectMarksStatus: "Not Updated",
+        examWeight: examWeight,
+        subjectMarks: suid,
+      };
+      stuData.studentMarks.push(studDataUpdate);
+      stuData.save();
+    }
+    // Exam Push in Subject Model
+    for (let i = 0; i < arry.length; i++) {
+      let subId = arry[i]._id;
+      sub = await Subject.findById({ _id: subId });
+      sub.subjectExams.push(newExam);
+      sub.save();
+    }
+
     res.status(200).send({ message: "Successfully Created Exam", newExam });
   }
 );
@@ -1223,22 +1308,53 @@ app.get("/subject-detail/:suid", async (req, res) => {
 });
 
 // Marks Submit and Save of Student
+// Marks Submit and Save of Student
+app.post("/student/:sid/marks/:eid/:eSubid", async (req, res) => {
+  const { sid, eid, eSubid } = req.params;
+  const { obtainedMarks, subjectMarksStatus } = req.body;
 
-app.post("/student/:sid/marks/:eid/:marks", async (req, res) => {
-  const { sid, eid, marks } = req.params;
+  // console.log(sid, eid, eSubid, obtainedMarks, subjectMarksStatus);
 
   const student = await Student.findById({ _id: sid });
   const exam = await Exam.findById({ _id: eid });
 
-  const examMarks = {
-    examId: eid,
-    examWeight: exam.examWeight,
-    examTotalMarks: exam.totalMarks,
-    examObtainMarks: marks,
-    examMarksStatus: "Updated",
-  };
-  student.studentMarks.push(examMarks);
-  await student.save();
+  // // console.log(`Student Data:- ${student}`)
+  // // console.log(`exam Data:- ${exam}`)
+
+  let examListOfStudent = student.studentMarks;
+  // Find Exam in List of Exam
+  console.log(examListOfStudent);
+
+  let exId;
+  for (let i = 0; i < examListOfStudent.length; i++) {
+    if (examListOfStudent[i].examId == eid) {
+      return (exId = examListOfStudent[i]);
+    }
+  }
+
+  // let examIndex = (examListOfStudent.map((e)=>{
+  //   if (e.examId == eid){
+  //     return e.examId
+  //   }  }))
+
+  // console.log(exId)
+  // // Find Exam Subject in List of Exam Subjects
+  // let examSubList = (examListOfStudent[examIndex].subjectMarks )
+  // console.log(examSubList)
+
+  // let examSubIndex = (examSubList.indexOf({ subjectName: `new ObjectId("${eSubid})`, }))+1
+
+  // console.log(examSubIndex)
+  // // let subIndex =
+  // const examMarks = {
+  //   examId: eid,
+  //   examWeight: exam.examWeight,
+  //   examTotalMarks: exam.totalMarks,
+  //   examObtainMarks: marks,
+  //   examMarksStatus: "Updated",
+  // };
+  // student.studentMarks.push(examMarks);
+  // await student.save();
   res.status(200).send({ message: "Successfully Marks Save" });
 });
 
@@ -1466,6 +1582,45 @@ app.post("/ins/:id/student/:cid/reject/:sid", isLoggedIn, async (req, res) => {
   });
 });
 
+app.post("/student/report/finilized/:id", isLoggedIn, async (req, res) => {
+  const { id } = req.params;
+  const { examList, marksTotal, stBehaviourData } = req.body;
+  try {
+    const student = await Student.findById({ _id: id });
+
+    const finalreport = {
+      finalObtainTotal: marksTotal.finalExToObtain,
+      finalMarksTotalTotal: marksTotal.finalExToTo,
+      OtherMarksObtainTotal: marksTotal.otherExObtain,
+      OtherMarksTotalTotal: marksTotal.otherExToTo,
+      FinalObtainMarksTotal: marksTotal.finalToObtain,
+      FinalTotalMarksTotal: marksTotal.finalToTo,
+      SubjectWiseMarks: [],
+    };
+
+    for (let i = 0; i < examList.length; i++) {
+      let finalSubRe = {
+        subName: examList[i].subName,
+        finalExamObtain: examList[i].finalExamObtainMarks,
+        finalExamTotal: examList[i].finalExamTotalMarks,
+        otherExamObtain: examList[i].OtherExamTotalObtainMarks,
+        otherExamTotal: examList[i].OtherExamTotalMarks,
+        finalObtainTotal: examList[i].finalObtainTotal,
+        finalTotalTotal: examList[i].finalTotalTotal,
+      };
+      // console.log(finalSubRe)
+      finalreport.SubjectWiseMarks.push(finalSubRe);
+    }
+    // console.log(finalreport)
+    student.studentFinalReportData = finalreport;
+    (student.studentFinalReportFinalizedStatus = "Finalized"),
+      await student.save();
+    res
+      .status(200)
+      .send({ message: "Student Final Report is Ready.", student });
+  } catch {}
+});
+
 // Get Batch Details class and Subject data
 app.get("/ins/:id/allclassdata/:did/batch/:bid", async (req, res) => {
   const { id, did, bid } = req.params;
@@ -1520,6 +1675,23 @@ app.post(
   }
 );
 
+app.get("/:id/roleData/:rid", async (req, res) => {
+  const { id, rid } = req.params;
+  try {
+    const staff = await Staff.findOne({ _id: rid });
+    const student = await Student.findOne({ _id: rid });
+    if (staff) {
+      res.status(200).send({ message: "staff", staff });
+    } else if (student) {
+      res.status(200).send({ message: "student", student });
+    } else {
+      res.status(200).send({ message: "error" });
+    }
+  } catch {
+    console.log("something went wrong");
+  }
+});
+
 // Get all Exam From a Class
 
 app.get("/exam/class/:cid", async (req, res) => {
@@ -1549,6 +1721,14 @@ app.get("/staff/:id", async (req, res) => {
     .populate("user")
     .populate("institute");
   res.status(200).send({ message: "Staff Data To Member", staff });
+});
+
+app.get("/student/:id", async (req, res) => {
+  const { id } = req.params;
+  const student = await Student.findById({ _id: id })
+    .populate("user")
+    .populate("institute");
+  res.status(200).send({ message: "Student Data To Member", student });
 });
 
 // for finding Staff By Id
@@ -1830,9 +2010,9 @@ app.post("/department-class/checklist/:did", isLoggedIn, async (req, res) => {
     .send({ message: "Checklist Created", department, classes, check });
 });
 
-app.post("/checklist", isLoggedIn, async (req, res) => {
-  const { ChecklistId } = req.body;
-  const checklist = await Checklist.findById({ _id: ChecklistId }).populate(
+app.get("/checklist/:checklistId", isLoggedIn, async (req, res) => {
+  const { checklistId } = req.params;
+  const checklist = await Checklist.findById({ _id: checklistId }).populate(
     "student"
   );
   res.status(200).send({ message: "Checklist Data", checklist });
@@ -1860,9 +2040,10 @@ app.post("/department-class/fee/:did", isLoggedIn, async (req, res) => {
     .send({ message: "Fees Raised", department, classes, feeData });
 });
 
-app.post("/fees", isLoggedIn, async (req, res) => {
-  const { FeesId } = req.body;
-  const feeData = await Fees.findById({ _id: FeesId })
+app.get("/fees/:feesId", isLoggedIn, async (req, res) => {
+  // console.log(req.params)
+  const { feesId } = req.params;
+  const feeData = await Fees.findById({ _id: feesId })
     .populate({
       path: "feeStudent",
     })
@@ -2299,7 +2480,7 @@ app.post("/student/:sid/checklist/:cid", isLoggedIn, async (req, res) => {
 
 // app.post("/user-register", async (req, res) => {
 //   const { username } = req.body;
-//   const admins = await Admin.findById({ _id: "61fb54de68443afe717ed88b" });
+//   const admins = await Admin.findById({ _id: "61fb60df067659ed1029b2fc" });
 //   const existAdmin = await Admin.findOne({ adminUserName: username });
 //   const existInstitute = await InstituteAdmin.findOne({ name: username });
 //   const existUser = await User.findOne({ username: username });
@@ -2372,7 +2553,7 @@ app.post("/user-detail-verify/:id", async (req, res) => {
 
 app.post("/profile-creation/:id", async (req, res) => {
   const { id } = req.params;
-  const admins = await Admin.findById({ _id: "61fb54de68443afe717ed88b" });
+  const admins = await Admin.findById({ _id: "6207d47cb2389c695ddf00ac" });
   const {
     userLegalName,
     userGender,
@@ -2470,8 +2651,6 @@ app.get("/userdashboard/:id", async (req, res) => {
       },
     })
     .populate("userFollowers")
-    .populate("userFollowing")
-    .populate("userCircle")
     .populate({
       path: "userInstituteFollowing",
       populate: {
@@ -2525,6 +2704,32 @@ app.get("/userdashboard/:id", async (req, res) => {
     })
     .populate({
       path: "userFollowing",
+      populate: {
+        path: "userPosts",
+      },
+    })
+    .populate({
+      path: "staff",
+      populate: {
+        path: "staffDepartment",
+      },
+    })
+    .populate("userFollowing")
+    .populate({
+      path: "staff",
+      populate: {
+        path: "staffClass",
+      },
+    })
+    .populate("userCircle")
+    .populate({
+      path: "staff",
+      populate: {
+        path: "staffSubject",
+      },
+    })
+    .populate({
+      path: "userCircle",
       populate: {
         path: "userPosts",
       },
@@ -2731,6 +2936,22 @@ app.put("/user/follow-ins/institute", async (req, res) => {
   }
 });
 
+app.put("/user/unfollow/institute", async (req, res) => {
+  const user = await User.findById({ _id: req.session.user._id });
+  const sinstitute = await InstituteAdmin.findById({
+    _id: req.body.InsfollowId,
+  });
+
+  if (sinstitute.userFollowersList.includes(req.session.user._id)) {
+    user.userInstituteFollowing.splice(req.body.InsfollowId, 1);
+    sinstitute.userFollowersList.splice(req.session.user._id, 1);
+    await user.save();
+    await sinstitute.save();
+  } else {
+    res.status(200).send({ message: "You Already Unfollow This Institute" });
+  }
+});
+
 app.post("/user-search-profile", isLoggedIn, async (req, res) => {
   // console.log(req.body
   const user = await User.findOne({
@@ -2773,21 +2994,27 @@ app.put("/user/circle-ins", async (req, res) => {
       members: [req.session.user._id, req.body.followId],
     });
     try {
-      const savedConversation = await newConversation.save();
-      res.status(200).json(savedConversation);
+      // const savedConversation = await newConversation.save();
+      // res.status(200).json(savedConversation);
     } catch (err) {
       res.status(500).json(err);
     }
-    suser.userFollowers.splice(req.session.user._id, 1);
-    user.userFollowing.splice(req.body.followId, 1);
-    suser.userCircle.push(req.session.user._id);
-    user.userCircle.push(req.body.followId);
-    await suser.save();
-    await user.save();
+    try {
+      suser.userFollowing.splice(req.session.user._id, 1);
+      user.userFollowers.splice(req.body.followId, 1);
+      suser.userCircle.push(req.session.user._id);
+      user.userCircle.push(req.body.followId);
+      // console.log(id, ids)
+      // console.log(suser, user.userFollowing)
+      await user.save();
+      await suser.save();
+    } catch {
+      res.status(500).send({ error: "error" });
+    }
   }
 });
 
-app.post("/user/forgot", isLoggedIn, async (req, res) => {
+app.post("/user/forgot", async (req, res) => {
   const { username } = req.body;
   const user = await User.findOne({ username: username });
   const institute = await InstituteAdmin.findOne({ name: username });
@@ -2825,7 +3052,7 @@ app.post("/user/forgot", isLoggedIn, async (req, res) => {
   }
 });
 
-app.post("/user/forgot/:fid", isLoggedIn, async (req, res) => {
+app.post("/user/forgot/:fid", async (req, res) => {
   const { fid } = req.params;
   const user = await User.findById({ _id: fid });
   const institute = await InstituteAdmin.findById({ _id: fid });
@@ -2852,7 +3079,7 @@ app.post("/user/forgot/:fid", isLoggedIn, async (req, res) => {
   }
 });
 
-app.post("/user/reset/password/:rid", isLoggedIn, async (req, res) => {
+app.post("/user/reset/password/:rid", async (req, res) => {
   const { rid } = req.params;
   const { userPassword, userRePassword } = req.body;
   const user = await User.findById({ _id: rid });

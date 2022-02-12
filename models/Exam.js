@@ -6,46 +6,55 @@ const Batch = require('./Batch')
 const Class = require('./Class')
 const Staff = require('./Staff')
 const Checklist = require('./Checklist')
-
+const SubjectMaster = require('./SubjectMaster')
+ 
 const examSchema = new mongoose.Schema({
-    
-    examType: { type: String, required: true },
-    examName: { type: String, required: true },
-    examMode: { type: String, required: true },
-    institute: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'InstituteAdmin',
-        require: true
-    },
-    batch: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Batch',
-        require: true
-    },
-    examForDepartment: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Department",
-        
-    },
-    examForClass: { 
-            type: mongoose.Schema.Types.ObjectId, 
-            ref: 'Class',
-            require: true
-        },
-        subject: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Subject'
-        },
-        subTeacher: {
-            type: mongoose.Schema.Types.ObjectId,
-            required: true
-        },
-        examDate: { type: Date, required: true },
-        examTime: { type: String, required: true },
-        examWeight: {type : Number, required: true },
-        totalMarks: {type : Number, required: true },
-    })      
-    
-    const Exam = mongoose.model('Exam', examSchema)
-    
+  
+   examName: { type: String, required: true },
+   examType: { type: String, required: true },
+   examMode: { type: String, required: true },
+   examWeight: { type : Number },
+   batch: {
+       type: mongoose.Schema.Types.ObjectId,
+       ref: 'Batch',
+       required: true
+   },
+   examForDepartment: {
+       type: mongoose.Schema.Types.ObjectId,
+       ref: "Department",
+       required:true
+      
+   },
+   examForClass: [
+       {
+           type: mongoose.Schema.Types.ObjectId,
+           ref: 'Class',
+           required: true
+       }
+   ],
+   subject:[
+       {
+           subjectName: {
+               type: mongoose.Schema.Types.ObjectId,
+               ref: "SubjectMaster",
+               required: true,
+           },
+           totalMarks: {
+               type : Number,
+               required: true
+           },
+           examDate: {
+               type: Date,
+           },
+           examTime: {
+               type: String,
+           },
+ 
+       },
+   ],
+  
+})
+  
+   const Exam = mongoose.model('Exam', examSchema)
+ 
 module.exports = Exam

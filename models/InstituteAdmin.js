@@ -28,6 +28,7 @@ const instituteAdminSchema = new mongoose.Schema({
   insStudentPresident: { type: String },
   insPrinciple: { type: String },
   insTrusty: { type: String },
+  insAdminClerk: { type: String },
   insEstdDate: { type: Date },
   // insRegNumber: { type: Number, required: true, unique: true },
   insAchievement: { type: String },
@@ -40,6 +41,7 @@ const instituteAdminSchema = new mongoose.Schema({
   photoId: { type: String },
   coverId: { type: String },
   createdAt: { type: Date, default: Date.now },
+  staffJoinCode: { type: String },
   posts: [
     {
       type: mongoose.Schema.Types.ObjectId,
