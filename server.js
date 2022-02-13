@@ -1448,6 +1448,43 @@ app.post(
   }
 );
 
+app.post("/all/account/switch", async (req, res) => {
+  const { userPhoneNumber } = req.body;
+  const user = await User.find({ userPhoneNumber: userPhoneNumber });
+  res.status(200).send({ message: "Switch Account Data", user });
+});
+
+app.post("/all/account/switch/user", async (req, res) => {
+  const { userPhoneNumber } = req.body;
+  const user = await User.find({ userPhoneNumber: userPhoneNumber });
+  const institute = await InstituteAdmin.find({
+    insPhoneNumber: userPhoneNumber,
+  });
+  res.status(200).send({ message: "Switch Account Data", user, institute });
+});
+
+app.post("/switchUser/:id", async (req, res) => {
+  const { id } = req.params;
+  const user = await User.findById({ _id: id });
+  // req.session.destroy()
+  req.session.user = user;
+  res.status(200).send({ message: "data", user });
+});
+
+app.post("/switchUser/ins/:id", async (req, res) => {
+  const { id } = req.params;
+  const user = await User.findOne({ _id: id });
+  const institute = await InstituteAdmin.findOne({ _id: id });
+  if (user) {
+    req.session.user = user;
+    res.status(200).send({ message: "data", user });
+  } else if (institute) {
+    req.session.institute = institute;
+    res.status(200).send({ message: "data", institute });
+  } else {
+  }
+});
+
 // Institute Student Joining Form
 
 app.post(
@@ -2994,8 +3031,8 @@ app.put("/user/circle-ins", async (req, res) => {
       members: [req.session.user._id, req.body.followId],
     });
     try {
-      // const savedConversation = await newConversation.save();
-      // res.status(200).json(savedConversation);
+      const savedConversation = await newConversation.save();
+      res.status(200).json(savedConversation);
     } catch (err) {
       res.status(500).json(err);
     }
@@ -3011,6 +3048,31 @@ app.put("/user/circle-ins", async (req, res) => {
     } catch {
       res.status(500).send({ error: "error" });
     }
+  }
+});
+
+app.put("/user/uncircle-ins", async (req, res) => {
+  const user = await User.findById({ _id: req.session.user._id });
+  const suser = await User.findById({ _id: req.body.followId });
+
+  if (
+    user.userCircle.includes(req.body.followId) &&
+    suser.userCircle.includes(req.session.user._id)
+  ) {
+    try {
+      user.userCircle.splice(req.body.followId, 1);
+      suser.userCircle.splice(req.session.user._id, 1);
+      user.userFollowers.push(req.body.followId);
+      suser.userFollowing.push(req.session.user._id);
+      // console.log(id, ids)
+      // console.log(suser, user.userFollowing)
+      await user.save();
+      await suser.save();
+    } catch {
+      res.status(500).send({ error: "error" });
+    }
+  } else {
+    res.status(200).send({ message: "You are Not In a Circle" });
   }
 });
 
