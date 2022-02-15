@@ -835,6 +835,26 @@ app.post("/ins/save/post", isLoggedIn, async (req, res) => {
   } else {
   }
 });
+app.post("/ins/unsave/post", isLoggedIn, async (req, res) => {
+  const { postId } = req.body;
+  const post = await Post.findById({ _id: postId });
+  const institute_session = req.session.institute;
+  const user_session = req.session.user;
+  if (institute_session) {
+    const institute = await InstituteAdmin.findById({
+      _id: institute_session._id,
+    });
+    institute.saveInsPost.splice(post, 1);
+    await institute.save();
+    res.status(200).send({ message: "Remove To Favourites", institute });
+  } else if (user_session) {
+    const user = await User.findById({ _id: user_session._id });
+    user.saveUserInsPost.splice(post, 1);
+    await user.save();
+    res.status(200).send({ message: "Remove To Favourites", user });
+  } else {
+  }
+});
 
 app.post("/post/unlike", isLoggedIn, async (req, res) => {
   const { postId } = req.body;
@@ -3194,7 +3214,7 @@ app.get("/user-announcement-detail/:id", async (req, res) => {
   res.status(200).send({ message: "Announcement Detail", announcement });
 });
 
-app.post("/user/save/post", async (req, res) => {
+app.post("/user/save/post", isLoggedIn, async (req, res) => {
   const { postId } = req.body;
   const user = await User.findById({ _id: req.session.user._id });
   const userPostsData = await UserPost.findById({ _id: postId });
@@ -3202,7 +3222,14 @@ app.post("/user/save/post", async (req, res) => {
   await user.save();
   res.status(200).send({ message: "Added To favourites", user });
 });
-
+app.post("/user/unsave/post", isLoggedIn, async (req, res) => {
+  const { postId } = req.body;
+  const user = await User.findById({ _id: req.session.user._id });
+  const userPostsData = await UserPost.findById({ _id: postId });
+  user.saveUsersPost.splice(userPostsData, 1);
+  await user.save();
+  res.status(200).send({ message: "Remove To favourites", user });
+});
 app.get("*", (req, res) => {
   res.status(404).send("Page Not Found...");
 });
