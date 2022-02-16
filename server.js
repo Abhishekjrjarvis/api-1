@@ -1187,18 +1187,13 @@ app.get("/exam/batch/:did", async (req, res) => {
 // Get all Exam From Subject
 app.get("/exam/subject/:suid", async (req, res) => {
   const { suid } = req.params;
-
   const subject = await Subject.findById({ _id: suid }).populate({
     path: "subjectExams",
     populate: {
-      path: "subject",
-      populate: {
-        path: "subjectName",
-      },
+      path: "examForClass",
     },
   });
   const subExamList = subject.subjectExams;
-
   res.status(200).send({ message: "Subject Exam List", subExamList });
 });
 
@@ -1329,21 +1324,22 @@ app.get("/subject-detail/:suid", async (req, res) => {
 
 // Marks Submit and Save of Student
 // Marks Submit and Save of Student
+// Marks Submit and Save of Student
 app.post("/student/:sid/marks/:eid/:eSubid", async (req, res) => {
   const { sid, eid, eSubid } = req.params;
   const { obtainedMarks, subjectMarksStatus } = req.body;
 
-  // console.log(sid, eid, eSubid, obtainedMarks, subjectMarksStatus);
+  console.log(sid, eid, eSubid, obtainedMarks, subjectMarksStatus);
 
   const student = await Student.findById({ _id: sid });
   const exam = await Exam.findById({ _id: eid });
 
-  // // console.log(`Student Data:- ${student}`)
-  // // console.log(`exam Data:- ${exam}`)
+  // console.log(`Student Data:- ${student}`)
+  // console.log(`exam Data:- ${exam}`)
 
   let examListOfStudent = student.studentMarks;
   // Find Exam in List of Exam
-  console.log(examListOfStudent);
+  // console.log(examListOfStudent);
 
   let exId;
   for (let i = 0; i < examListOfStudent.length; i++) {
@@ -1352,29 +1348,31 @@ app.post("/student/:sid/marks/:eid/:eSubid", async (req, res) => {
     }
   }
 
-  // let examIndex = (examListOfStudent.map((e)=>{
-  //   if (e.examId == eid){
-  //     return e.examId
-  //   }  }))
+  let examIndex = examListOfStudent.map((e) => {
+    if (e.examId == eid) {
+      return e.examId;
+    }
+  });
 
   // console.log(exId)
-  // // Find Exam Subject in List of Exam Subjects
-  // let examSubList = (examListOfStudent[examIndex].subjectMarks )
-  // console.log(examSubList)
+  // Find Exam Subject in List of Exam Subjects
+  let examSubList = examListOfStudent[examIndex].subjectMarks;
+  console.log(examSubList);
 
-  // let examSubIndex = (examSubList.indexOf({ subjectName: `new ObjectId("${eSubid})`, }))+1
+  let examSubIndex =
+    examSubList.indexOf({ subjectName: `new ObjectId("${eSubid})` }) + 1;
 
   // console.log(examSubIndex)
-  // // let subIndex =
-  // const examMarks = {
-  //   examId: eid,
-  //   examWeight: exam.examWeight,
-  //   examTotalMarks: exam.totalMarks,
-  //   examObtainMarks: marks,
-  //   examMarksStatus: "Updated",
-  // };
-  // student.studentMarks.push(examMarks);
-  // await student.save();
+  // let subIndex =
+  const examMarks = {
+    examId: eid,
+    examWeight: exam.examWeight,
+    examTotalMarks: exam.totalMarks,
+    examObtainMarks: marks,
+    examMarksStatus: "Updated",
+  };
+  student.studentMarks.push(examMarks);
+  await student.save();
   res.status(200).send({ message: "Successfully Marks Save" });
 });
 

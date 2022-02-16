@@ -35,6 +35,10 @@ const subjectSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "InstituteAdmin",
   },
+  subjectStatus: {
+    type: String,
+    default: "Unlocked",
+  },
 });
 
 const Subject = mongoose.model("Subject", subjectSchema);
