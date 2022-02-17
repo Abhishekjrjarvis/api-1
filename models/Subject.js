@@ -9,6 +9,10 @@ const subjectSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  subjectStatus: {
+    type: String,
+    default: "Unlocked"
+  },
   subjectTitle: {
     type: String,
     required: true,
@@ -34,10 +38,6 @@ const subjectSchema = new mongoose.Schema({
   institute: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "InstituteAdmin",
-  },
-  subjectStatus: {
-    type: String,
-    default: "Unlocked",
   },
 });
 

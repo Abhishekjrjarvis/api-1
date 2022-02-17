@@ -59,7 +59,7 @@ const dburl =
   "mongodb+srv://new-user-web-app:6o2iZ1OFMybEtVDK@cluster0.sdhjn.mongodb.net/myFirstDatabase?retryWrites=true&w=majority";
 
 // const dburl = "mongodb://localhost:27017/Erp_app";
-// const dburl = "mongodb://localhost:27017/Erp_app_1-Feb";
+// const dburl = "mongodb://localhost:27017/Erp_test01";
 
 mongoose
   .connect(dburl, {
@@ -238,7 +238,7 @@ app.post("/admin/:aid/reject/ins/:id", isLoggedIn, async (req, res) => {
 //for global user admin "6207d47cb2389c695ddf00ac"
 //for local my system "61fd7c329926f9f010d96809"
 app.post("/ins-register", async (req, res) => {
-  const admins = await Admin.findById({ _id: "6207d47cb2389c695ddf00ac" });
+  const admins = await Admin.findById({ _id: "6209ffe84cab4b1533ffc625" });
   const existInstitute = await InstituteAdmin.findOne({ name: req.body.name });
   const existAdmin = await Admin.findOne({ adminUserName: req.body.name });
   const existUser = await User.findOne({ username: req.body.name });
@@ -835,26 +835,6 @@ app.post("/ins/save/post", isLoggedIn, async (req, res) => {
   } else {
   }
 });
-app.post("/ins/unsave/post", isLoggedIn, async (req, res) => {
-  const { postId } = req.body;
-  const post = await Post.findById({ _id: postId });
-  const institute_session = req.session.institute;
-  const user_session = req.session.user;
-  if (institute_session) {
-    const institute = await InstituteAdmin.findById({
-      _id: institute_session._id,
-    });
-    institute.saveInsPost.splice(post, 1);
-    await institute.save();
-    res.status(200).send({ message: "Remove To Favourites", institute });
-  } else if (user_session) {
-    const user = await User.findById({ _id: user_session._id });
-    user.saveUserInsPost.splice(post, 1);
-    await user.save();
-    res.status(200).send({ message: "Remove To Favourites", user });
-  } else {
-  }
-});
 
 app.post("/post/unlike", isLoggedIn, async (req, res) => {
   const { postId } = req.body;
@@ -1178,8 +1158,7 @@ app.get("/exam/batch/:did", async (req, res) => {
   const { did } = req.params;
   const exams = await Exam.find({ examForDepartment: did })
     .populate("examForClass")
-    .populate("subject")
-    .populate("subTeacher");
+    .populate("subject");
 
   res.status(200).send({ message: "All Exam Data", exams });
 });
@@ -1197,13 +1176,24 @@ app.get("/exam/subject/:suid", async (req, res) => {
   res.status(200).send({ message: "Subject Exam List", subExamList });
 });
 
+// Rought For Complete Subject
+app.post("/subject/status/:suid", async (req, res) => {
+  const { suid } = req.params;
+
+  const subject = await Subject.findById({ _id: suid });
+
+  subject.subjectStatus = "Locked";
+  subject.save();
+  console.log("subject Was Locked");
+  res.status(200).send({ message: "Subject Successfully Locked" });
+});
 // Route For Exam Creation
 app.post(
   "/user/:id/department/function/exam/creation/:did/batch/:bid",
   // isLoggedIn,
   async (req, res) => {
     const { id, did, bid } = req.params;
-    const { suid, examForClass, examName, examType, examMode, examWeight } =
+    const { subject, examForClass, examName, examType, examMode, examWeight } =
       req.body;
 
     const batch = await Batch.findById({ _id: bid });
@@ -1214,11 +1204,29 @@ app.post(
       examType: examType,
       examMode: examMode,
       examWeight: examWeight,
-      batch: batch,
-      examForDepartment: depart,
-      examForClass: examForClass,
-      subject: suid,
+      batch: batch._id,
+      examForDepartment: depart._id,
+      examForClass: [],
+      subject: [],
     });
+
+    for (let i = 0; i < examForClass[0].length; i++) {
+      let d = examForClass[0][i].classId;
+      newExam.examForClass.push(d);
+    }
+
+    for (let i = 0; i < subject.length; i++) {
+      let d = await SubjectMaster.find({ subjectName: subject[i].examSubName });
+      let Sub = {
+        subMasterId: d[0]._id,
+        subjectName: subject[i].examSubName,
+        totalMarks: subject[i].examSubTotalMarks,
+        examDate: subject[i].examSubDate,
+        examTime: subject[i].examSubTime,
+        subjectMarksStatus: "Not Updated",
+      };
+      newExam.subject.push(Sub);
+    }
 
     await newExam.save();
     batch.batchExam.push(newExam);
@@ -1229,9 +1237,10 @@ app.post(
     // Push Exam In ClassRoom
     let studentList = [];
     let arry = [];
-    for (let i = 0; i < examForClass.length; i++) {
+    for (let i = 0; i < newExam.examForClass.length; i++) {
+      // Push Exam in ClassRoom
       const classRoomData = await Class.findById({
-        _id: examForClass[i],
+        _id: newExam.examForClass[i],
       }).populate({
         path: "subject",
         populate: {
@@ -1239,23 +1248,24 @@ app.post(
         },
       });
 
-      classRoomData.classExam.push(newExam);
+      classRoomData.classExam.push(newExam._id);
       classRoomData.save();
 
       // For Exam save in Subject
       let exSub = classRoomData.subject;
-      let subArr = [];
-      for (let j = 0; j < suid.length; j++) {
+      let subAre = [];
+      for (let j = 0; j < newExam.subject.length; j++) {
         let subjectObj = exSub.filter((e) => {
-          return e.subjectMasterName._id == suid[j].subjectName;
+          return e.subjectName == newExam.subject[j].subjectName;
         });
 
         for (let k = 0; k < subjectObj.length; k++) {
-          subArr.push(subjectObj[k]);
+          let d = subjectObj[k];
+          subAre.push(d);
         }
       }
-      for (let i = 0; i < subArr.length; i++) {
-        arry.push(subArr[i]);
+      for (let i = 0; i < subAre.length; i++) {
+        arry.push(subAre[i]);
       }
       // find Class room Approve student and Push Exam in each student
       let stud = classRoomData.ApproveStudent;
@@ -1272,7 +1282,7 @@ app.post(
         examId: newExam._id,
         allSubjectMarksStatus: "Not Updated",
         examWeight: examWeight,
-        subjectMarks: suid,
+        subjectMarks: newExam.subject,
       };
       stuData.studentMarks.push(studDataUpdate);
       stuData.save();
@@ -1281,11 +1291,12 @@ app.post(
     for (let i = 0; i < arry.length; i++) {
       let subId = arry[i]._id;
       sub = await Subject.findById({ _id: subId });
-      sub.subjectExams.push(newExam);
+      sub.subjectExams.push(newExam._id);
       sub.save();
     }
-
+    console.log("Exam Created");
     res.status(200).send({ message: "Successfully Created Exam", newExam });
+    // res.status(200).send({ message: "Successfully Created Exam" });
   }
 );
 
@@ -1323,56 +1334,95 @@ app.get("/subject-detail/:suid", async (req, res) => {
 });
 
 // Marks Submit and Save of Student
-// Marks Submit and Save of Student
-// Marks Submit and Save of Student
 app.post("/student/:sid/marks/:eid/:eSubid", async (req, res) => {
   const { sid, eid, eSubid } = req.params;
   const { obtainedMarks, subjectMarksStatus } = req.body;
 
-  console.log(sid, eid, eSubid, obtainedMarks, subjectMarksStatus);
+  console.log(obtainedMarks);
 
   const student = await Student.findById({ _id: sid });
-  const exam = await Exam.findById({ _id: eid });
-
-  // console.log(`Student Data:- ${student}`)
-  // console.log(`exam Data:- ${exam}`)
+  const examData = await Exam.findById({ _id: eid });
+  const subjectData = await Subject.findById({ _id: eSubid });
 
   let examListOfStudent = student.studentMarks;
-  // Find Exam in List of Exam
-  // console.log(examListOfStudent);
 
-  let exId;
+  let exId = {};
   for (let i = 0; i < examListOfStudent.length; i++) {
     if (examListOfStudent[i].examId == eid) {
-      return (exId = examListOfStudent[i]);
+      exId = examListOfStudent[i];
     }
   }
 
-  let examIndex = examListOfStudent.map((e) => {
-    if (e.examId == eid) {
-      return e.examId;
+  function indIndex(arraytosearch, valuetosearch) {
+    for (var i = 0; i < arraytosearch.length; i++) {
+      if (arraytosearch[i].examId == valuetosearch) {
+        return i;
+      }
     }
-  });
+    return null;
+  }
 
-  // console.log(exId)
-  // Find Exam Subject in List of Exam Subjects
+  let examIndex = indIndex(examListOfStudent, eid);
+
+  // // Find Exam Subject in List of Exam Subjects
   let examSubList = examListOfStudent[examIndex].subjectMarks;
-  console.log(examSubList);
 
-  let examSubIndex =
-    examSubList.indexOf({ subjectName: `new ObjectId("${eSubid})` }) + 1;
+  function subIndex(arraytosearch, valuetosearch) {
+    for (var i = 0; i < arraytosearch.length; i++) {
+      if (arraytosearch[i].subjectName == valuetosearch) {
+        return i;
+      }
+    }
+    return null;
+  }
 
-  // console.log(examSubIndex)
-  // let subIndex =
-  const examMarks = {
-    examId: eid,
-    examWeight: exam.examWeight,
-    examTotalMarks: exam.totalMarks,
-    examObtainMarks: marks,
-    examMarksStatus: "Updated",
-  };
-  student.studentMarks.push(examMarks);
+  let examSubIndex = subIndex(examSubList, subjectData.subjectName);
+  console.log(`Exam index:- ${examIndex}`);
+  console.log(`ExamSub index:- ${examSubIndex}`);
+
+  student.studentMarks[examIndex].subjectMarks[examSubIndex].obtainMarks =
+    obtainedMarks;
+  student.studentMarks[examIndex].subjectMarks[
+    examSubIndex
+  ].subjectMarksStatus = "Updated";
   await student.save();
+
+  // Check Exam Status To be Updated:-
+
+  const studentData2 = await Student.findById({ _id: sid });
+
+  examSubList2 = studentData2.studentMarks[examIndex].subjectMarks;
+  subLisLength = examSubList2.length;
+  filterExamSubListUpdate = examSubList2.filter((e) => {
+    return e.subjectMarksStatus === "Updated";
+  });
+  filterListLength = filterExamSubListUpdate.length;
+
+  if (subLisLength === filterListLength) {
+    studentData2.studentMarks[examIndex].allSubjectMarksStatus = "Updated";
+    studentData2.save();
+  } else {
+    console.log(`All Subject Status of Exam are Not Updated`);
+  }
+
+  // Update Final Report Status in Student Profile
+
+  const studentData3 = await Student.findById({ _id: sid });
+
+  examList2 = studentData2.studentMarks;
+  exLisLength = examSubList2.length;
+  filterExamSubListUpdate = examList2.filter((e) => {
+    return e.allSubjectMarksStatus === "Updated";
+  });
+  filterListLength2 = filterExamSubListUpdate.length;
+
+  if (exLisLength === filterListLength2) {
+    studentData3.studentFinalReportFinalizedStatus = "Ready";
+    studentData3.save();
+  } else {
+    console.log(`Student Report Finilized Status Ready`);
+  }
+  console.log("Exam Marks Saved");
   res.status(200).send({ message: "Successfully Marks Save" });
 });
 
@@ -1810,7 +1860,7 @@ app.post("/:id/studentdetaildata", isLoggedIn, async (req, res) => {
   const { id } = req.params;
   const { studentId } = req.body;
   try {
-    const student = await Student.findById({ _id: studentId });
+    const student = await Student.findById({ _id: id });
     const user = await User.findById({ _id: id });
     const role = await new Role({
       userSelectStudentRole: student,
@@ -1829,37 +1879,26 @@ app.get("/studentdetaildata/:id", isLoggedIn, async (req, res) => {
     .populate({
       path: "studentMarks",
       populate: {
-        path: "examId",
+        path: "subjectMarks",
         populate: {
-          path: "subject",
+          path: "subMasterId",
         },
+      },
+    })
+    .populate({
+      path: "studentMarks",
+      populate: {
+        path: "examId",
       },
     })
     .populate("studentClass")
     .populate("attendDate")
     .populate("studentBehaviourStatus");
-  // console.log(student)
 
-  studentSubjects = student.studentClass.subject;
-  examList = student.studentMarks;
-
-  function subWiseExamFilter(eL, subL) {
-    const filterList = [];
-    for (let i = 0; i < subL.length; i++) {
-      let newArray = eL.filter((ele) => {
-        return (d = ele.examId.subject._id === subL[i]);
-      });
-      filterList.push(newArray);
-    }
-    return filterList;
-  }
-
-  const listWithFilter = subWiseExamFilter(examList, studentSubjects);
-
-  res
-    .status(200)
-    .send({ message: "Student Detail Data", student, listWithFilter });
+  const behaviour = await Behaviour.find({ studentName: id });
+  res.status(200).send({ message: "Student Detail Data", student, behaviour });
 });
+
 // Student Status Updated
 
 app.post("/student/status", isLoggedIn, async (req, res) => {
@@ -1980,6 +2019,74 @@ app.post("/:did/department/batch", isLoggedIn, async (req, res) => {
   res.status(200).send({ message: "Batch Class Data", batch });
 });
 
+// Request for Department Previous Batch Data
+// Staff Batch Detail Data
+app.get("/department-batch-detail/:did", async (req, res) => {
+  const { did } = req.params;
+  const department = await Department.findById({ _id: did })
+    .populate("batches")
+    .populate("userBatch");
+  res.status(200).send({ message: "Department Data", department });
+});
+// Class Settings User Side API
+
+// Class Premote Students
+
+app.post("class/premote/:cid", async (req, res) => {
+  const { cid } = req.params;
+  const { selectedBatch, studentToPromote, classToPromote } = req.body;
+  const classData = await Class.findById({ _id: cid }).populate(
+    "ApproveStudent"
+  );
+
+  const batchData = await Batch.findById({ _id: selectedBatch }).populate(
+    "classroom"
+  );
+
+  let approveStd = classData.ApproveStudent;
+  let filter = approveStd.filter((e) => {
+    return e.studentPremoteStatus === "Promoted";
+  });
+
+  let lockSub = classSubList.filter((e) => {
+    return e.subjectStatus === "Locked";
+  });
+  let lockSubLength = lockSub.length;
+  let subLength = classSubList.length;
+  console.log(lockSubLength);
+  console.log(`Subject Length:- ${subLength}`);
+
+  if (subLength !== lockSubLength) {
+    res.status(200).send({ message: "All Subject of Class are Not Locked" });
+  } else {
+    classData.classStatus = "Locked";
+    classData.save();
+    res.status(200).send({ message: "Class Locked Successfully" });
+  }
+});
+
+// Class Lock
+app.post("/department/batch/class/:cid", async (req, res) => {
+  const { cid } = req.params;
+  const classData = await Class.findById({ _id: cid }).populate("subject");
+
+  let classSubList = classData.subject;
+
+  let lockSub = classSubList.filter((e) => {
+    return e.subjectStatus === "Locked";
+  });
+  let lockSubLength = lockSub.length;
+  let subLength = classSubList.length;
+
+  if (subLength !== lockSubLength) {
+    res.status(200).send({ message: "All Subject of Class are Not Locked" });
+  } else {
+    classData.classStatus = "Locked";
+    classData.save();
+    res.status(200).send({ message: "Class Locked Successfully" });
+  }
+});
+
 // Staff Batch Detail Data
 app.get("/batch-detail/:bid", async (req, res) => {
   const { bid } = req.params;
@@ -1993,7 +2100,9 @@ app.get("/batch-detail/:bid", async (req, res) => {
 
 app.post("/batch/class", isLoggedIn, async (req, res) => {
   const { ClassId } = req.body;
-  const classes = await Class.findById({ _id: ClassId }).populate("subject");
+  const classes = await Class.findById({ _id: ClassId })
+    .populate("subject")
+    .populate("batch");
   res.status(200).send({ message: "Class Data", classes });
 });
 
@@ -2608,7 +2717,7 @@ app.post("/user-detail-verify/:id", async (req, res) => {
 
 app.post("/profile-creation/:id", async (req, res) => {
   const { id } = req.params;
-  const admins = await Admin.findById({ _id: "6207d47cb2389c695ddf00ac" });
+  const admins = await Admin.findById({ _id: "6209ffe84cab4b1533ffc625" });
   const {
     userLegalName,
     userGender,
@@ -3212,7 +3321,7 @@ app.get("/user-announcement-detail/:id", async (req, res) => {
   res.status(200).send({ message: "Announcement Detail", announcement });
 });
 
-app.post("/user/save/post", isLoggedIn, async (req, res) => {
+app.post("/user/save/post", async (req, res) => {
   const { postId } = req.body;
   const user = await User.findById({ _id: req.session.user._id });
   const userPostsData = await UserPost.findById({ _id: postId });
@@ -3220,6 +3329,28 @@ app.post("/user/save/post", isLoggedIn, async (req, res) => {
   await user.save();
   res.status(200).send({ message: "Added To favourites", user });
 });
+
+app.post("/ins/unsave/post", isLoggedIn, async (req, res) => {
+  const { postId } = req.body;
+  const post = await Post.findById({ _id: postId });
+  const institute_session = req.session.institute;
+  const user_session = req.session.user;
+  if (institute_session) {
+    const institute = await InstituteAdmin.findById({
+      _id: institute_session._id,
+    });
+    institute.saveInsPost.splice(post, 1);
+    await institute.save();
+    res.status(200).send({ message: "Remove To Favourites", institute });
+  } else if (user_session) {
+    const user = await User.findById({ _id: user_session._id });
+    user.saveUserInsPost.splice(post, 1);
+    await user.save();
+    res.status(200).send({ message: "Remove To Favourites", user });
+  } else {
+  }
+});
+
 app.post("/user/unsave/post", isLoggedIn, async (req, res) => {
   const { postId } = req.body;
   const user = await User.findById({ _id: req.session.user._id });
@@ -3228,6 +3359,7 @@ app.post("/user/unsave/post", isLoggedIn, async (req, res) => {
   await user.save();
   res.status(200).send({ message: "Remove To favourites", user });
 });
+
 app.get("*", (req, res) => {
   res.status(404).send("Page Not Found...");
 });

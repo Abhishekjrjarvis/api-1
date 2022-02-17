@@ -19,7 +19,10 @@ const classSchema = new mongoose.Schema({
   classStudentTotal: { type: String },
   classSubjectTotal: { type: String },
   classDisplayPerson: { type: String },
-
+  classStatus: {
+    type: String,
+    default: "Unlocked"
+  },
   masterClassName: { type: mongoose.Schema.Types.ObjectId, ref: "ClassMaster" },
   classHeadTitle: { type: String, required: true },
   subject: [

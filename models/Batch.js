@@ -8,7 +8,10 @@ const batchSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-
+  batchStatus: {
+    type: String,
+    default: "UnLocked"
+  },
   createdAt: {
     type: Date,
     default: Date.now,

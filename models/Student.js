@@ -35,6 +35,16 @@ const studentSchema = new mongoose.Schema({
   studentAadharCard: { type: String },
   studentStatus: { type: String, default: "Not Approved" },
   studentBehaviourReportStatus: { type: String, default: "Not Ready" },
+  studentPremoteStatus: { type: String, default: "Not Promoted" },
+  studentReason: { type: String },
+  studentCertificateDate: { type: String },
+  studentLeavingInsDate: { type: String },
+  studentLeavingRemark: { type: String },
+  studentLeavingBehaviour: { type: String },
+  studentLeavingStudy: { type: String },
+  studentLeavingReason: { type: String },
+  studentBookNo: { type: String },
+  studentROLLNO: { type: String },
   studentBehaviourStatus: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Behaviour",
@@ -84,7 +94,6 @@ const studentSchema = new mongoose.Schema({
       },
     ],
   },
-
   studentMarks: [
     {
       examId: {
@@ -118,7 +127,6 @@ const studentSchema = new mongoose.Schema({
       ],
     },
   ],
-
   studentFee: [
     {
       type: mongoose.Schema.Types.ObjectId,
