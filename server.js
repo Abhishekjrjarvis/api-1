@@ -253,7 +253,6 @@ app.post("/ins-register", async (req, res) => {
       const institute = await new InstituteAdmin({ ...req.body });
       institute.photoId = "1";
       institute.coverId = "2";
-      // console.log(institute);
       admins.instituteList.push(institute);
       await admins.save();
       await institute.save();
@@ -281,10 +280,6 @@ app.post("/ins-register/doc/:id", upload.single("file"), async (req, res) => {
   const results = await uploadFile(file);
   const institute = await InstituteAdmin.findById({ _id: id });
   institute.insDocument = results.key;
-  // console.log(
-  //   "This is insDocument for the after updating : ",
-  //   institute.insDocument
-  // );
   await institute.save();
   await unlinkFile(file.path);
 
@@ -294,7 +289,6 @@ app.post("/ins-register/doc/:id", upload.single("file"), async (req, res) => {
 // Create Institute Password
 app.post("/create-password/:id", async (req, res) => {
   const { id } = req.params;
-  // console.log(id);
   const { insPassword, insRePassword } = req.body;
   const institute = await InstituteAdmin.findById({ _id: id });
   const genPass = await bcrypt.genSaltSync(12);
@@ -381,7 +375,6 @@ app.post("/ins-login", async (req, res) => {
 app.get("/ins-logout", (req, res) => {
   res.clearCookie("SessionID", { path: "/" });
   res.status(200).send({ message: "Successfully Logout" });
-  // console.log("Session Timed Out");
 });
 
 // Get All Data From Institute Collections
@@ -484,7 +477,6 @@ app.post(
     const post = new Post({ ...req.body });
     post.imageId = "0";
     post.CreateImage = results.key;
-    // console.log("Tis is institute : ", post);
     institute.posts.push(post);
     post.institute = institute._id;
     await institute.save();
@@ -568,7 +560,6 @@ app.post(
     const file = req.file;
     const results = await uploadFile(file);
     const institute = await InstituteAdmin.findById({ _id: id });
-    // console.log("This is file url: ", results);
     institute.insProfilePhoto = results.key;
     institute.photoId = "0";
 
@@ -700,9 +691,6 @@ app.post(
   isLoggedIn,
   async (req, res) => {
     const { sid } = req.params;
-    // console.log(req.params);
-    // console.log(req.body);
-
     const staff = await Staff.findById({ _id: sid });
     staff.staffFirstName = req.body.staffFirstName;
     staff.staffMiddleName = req.body.staffMiddleName;
@@ -793,7 +781,6 @@ app.post("/post/like", isLoggedIn, async (req, res) => {
       post.insLike.length >= 1 &&
       post.insLike.includes(String(institute_session._id))
     ) {
-      // console.log("You already liked it");
     } else {
       post.insLike.push(institute_session._id);
       await post.save();
@@ -804,7 +791,6 @@ app.post("/post/like", isLoggedIn, async (req, res) => {
       post.insUserLike.length >= 1 &&
       post.insUserLike.includes(String(user_session._id))
     ) {
-      // console.log("You already liked it user");
     } else {
       post.insUserLike.push(user_session._id);
       console.log(post.insUserLike);
@@ -860,15 +846,12 @@ app.post("/post/comments/:id", async (req, res) => {
   const post = await Post.findById({ _id: id });
   const comment = await new Comment({ ...req.body });
   if (req.session.institute) {
-    // comment.institutes.push(req.session.institute._id)
     comment.institutes = req.session.institute.name;
   } else {
-    // comment.instituteUser.push(req.session.user._id)
     comment.instituteUser = req.session.user.username;
   }
   post.comment.push(comment);
   comment.post = post;
-  // console.log(comment);
   await post.save();
   await comment.save();
   res.status(200).send({ message: "Successfully Commented", post });
@@ -1018,7 +1001,6 @@ app.get("/department/:did", async (req, res) => {
       path: "userBatch",
     });
 
-  // console.log(department);
   res.status(200).send({ message: "Department Data", department });
 });
 
@@ -1047,12 +1029,10 @@ app.get("/batch/class/:bid", async (req, res) => {
 
 app.post("/addbatch/:did", isLoggedIn, async (req, res) => {
   const { did } = req.params;
-  // console.log(req.body);
   const department = await Department.findById({ _id: did });
   const batch = await new Batch({ ...req.body });
   department.batches.push(batch);
   batch.department = department;
-  // console.log(batch);
   await department.save();
   await batch.save();
   res.status(200).send({ message: "batch data", batch });
@@ -1184,7 +1164,6 @@ app.post("/subject/status/:suid", async (req, res) => {
 
   subject.subjectStatus = "Locked";
   subject.save();
-  console.log("subject Was Locked");
   res.status(200).send({ message: "Subject Successfully Locked" });
 });
 // Route For Exam Creation
@@ -1294,7 +1273,6 @@ app.post(
       sub.subjectExams.push(newExam._id);
       sub.save();
     }
-    console.log("Exam Created");
     res.status(200).send({ message: "Successfully Created Exam", newExam });
     // res.status(200).send({ message: "Successfully Created Exam" });
   }
@@ -1308,7 +1286,10 @@ app.get("/class-detail/:cid", async (req, res) => {
     .populate("ApproveStudent")
     .populate("classExam")
     .populate("attendence")
-    .populate("subject");
+    .populate("subject")
+    .populate("institute")
+    .populate("classTeacher")
+    .populate("batch");
 
   res.status(200).send({ message: " Subject & class Data", classData });
 });
@@ -1337,8 +1318,6 @@ app.get("/subject-detail/:suid", async (req, res) => {
 app.post("/student/:sid/marks/:eid/:eSubid", async (req, res) => {
   const { sid, eid, eSubid } = req.params;
   const { obtainedMarks, subjectMarksStatus } = req.body;
-
-  console.log(obtainedMarks);
 
   const student = await Student.findById({ _id: sid });
   const examData = await Exam.findById({ _id: eid });
@@ -1377,8 +1356,6 @@ app.post("/student/:sid/marks/:eid/:eSubid", async (req, res) => {
   }
 
   let examSubIndex = subIndex(examSubList, subjectData.subjectName);
-  console.log(`Exam index:- ${examIndex}`);
-  console.log(`ExamSub index:- ${examSubIndex}`);
 
   student.studentMarks[examIndex].subjectMarks[examSubIndex].obtainMarks =
     obtainedMarks;
@@ -1422,7 +1399,6 @@ app.post("/student/:sid/marks/:eid/:eSubid", async (req, res) => {
   } else {
     console.log(`Student Report Finilized Status Ready`);
   }
-  console.log("Exam Marks Saved");
   res.status(200).send({ message: "Successfully Marks Save" });
 });
 
@@ -1654,7 +1630,6 @@ app.post("/ins/:id/student/:cid/approve/:sid", isLoggedIn, async (req, res) => {
   classes.ApproveStudent.push(student);
   classes.student.splice(sid, 1);
   student.studentGRNO = classes.ApproveStudent.length;
-  // console.log(student)
   await institute.save();
   await classes.save();
   await student.save();
@@ -1671,12 +1646,8 @@ app.post("/ins/:id/student/:cid/reject/:sid", isLoggedIn, async (req, res) => {
   const student = await Student.findById({ _id: sid });
   const classes = await Class.findById({ _id: cid });
   student.studentStatus = req.body.status;
-  // institute.ApproveStudent.push(student)
   institute.student.splice(sid, 1);
-  // classes.ApproveStudent.push(student)
   classes.student.splice(sid, 1);
-  // student.studentGRNO = classes.ApproveStudent.length
-  // console.log(student)
   await institute.save();
   await classes.save();
   await student.save();
@@ -1713,10 +1684,8 @@ app.post("/student/report/finilized/:id", isLoggedIn, async (req, res) => {
         finalObtainTotal: examList[i].finalObtainTotal,
         finalTotalTotal: examList[i].finalTotalTotal,
       };
-      // console.log(finalSubRe)
       finalreport.SubjectWiseMarks.push(finalSubRe);
     }
-    // console.log(finalreport)
     student.studentFinalReportData = finalreport;
     (student.studentFinalReportFinalizedStatus = "Finalized"),
       await student.save();
@@ -2053,9 +2022,6 @@ app.post("class/premote/:cid", async (req, res) => {
   });
   let lockSubLength = lockSub.length;
   let subLength = classSubList.length;
-  console.log(lockSubLength);
-  console.log(`Subject Length:- ${subLength}`);
-
   if (subLength !== lockSubLength) {
     res.status(200).send({ message: "All Subject of Class are Not Locked" });
   } else {
@@ -2205,7 +2171,6 @@ app.post("/department-class/fee/:did", isLoggedIn, async (req, res) => {
 });
 
 app.get("/fees/:feesId", isLoggedIn, async (req, res) => {
-  // console.log(req.params)
   const { feesId } = req.params;
   const feeData = await Fees.findById({ _id: feesId })
     .populate({
@@ -2263,7 +2228,6 @@ app.post("/class/:cid/student/:sid/behaviour", isLoggedIn, async (req, res) => {
 
 app.post("/class/:cid/student/attendence", isLoggedIn, async (req, res) => {
   const { cid, sid } = req.params;
-  // console.log(req.params, req.body)
   const dLeave = await Holiday.findOne({
     dDate: { $eq: `${req.body.attendDate}` },
   });
@@ -2346,8 +2310,6 @@ app.post(
           attendDates.absentStudent.includes(String(student._id))
         ) {
           attendDates.absentStudent.splice(student._id, 1);
-          // console.log(attendDates.absentStudent)
-          // console.log('marked as present')
           attendDates.presentStudent.push(student);
           attendDates.presentstudents = student;
           await attendDates.save();
@@ -2395,8 +2357,6 @@ app.post(
           attendDates.presentStudent.includes(String(student._id))
         ) {
           attendDates.presentStudent.splice(student._id, 1);
-          // console.log(attendDates.presentStudent)
-          // console.log('marked as absent')
           attendDates.absentStudent.push(student);
           attendDates.absentstudents = student;
           await attendDates.save();
@@ -2444,8 +2404,6 @@ app.post(
           staffAttendDates.absentStaff.includes(String(staff._id))
         ) {
           staffAttendDates.absentStaff.splice(staff._id, 1);
-          // console.log(staffAttendDates.absentStudent)
-          // console.log('marked as present')
           staffAttendDates.presentStaff.push(staff);
           staffAttendDates.presentstaffs = staff;
           await staffAttendDates.save();
@@ -2493,8 +2451,6 @@ app.post(
           staffAttendDates.presentStaff.includes(String(staff._id))
         ) {
           staffAttendDates.presentStaff.splice(staff._id, 1);
-          // console.log(staffAttendDates.presentStudent)
-          // console.log('marked as absent')
           staffAttendDates.absentStaff.push(staff);
           staffAttendDates.absentstaffs = staff;
           await staffAttendDates.save();
@@ -2534,7 +2490,6 @@ app.post("/attendence/detail", isLoggedIn, async (req, res) => {
 app.post("/attendence/status/student/:sid", isLoggedIn, async (req, res) => {
   const { sid } = req.params;
   const { dateStatus } = req.body;
-  // console.log(req.body)
   const attendStatus = await AttendenceDate.findOne({ attendDate: dateStatus });
   if (attendStatus) {
     if (
@@ -2561,7 +2516,6 @@ app.post("/attendence/status/student/:sid", isLoggedIn, async (req, res) => {
 });
 
 app.post("/staff/attendence", isLoggedIn, async (req, res) => {
-  // console.log(req.body)
   const staffDates = await StaffAttendenceDate.findOne({
     staffAttendDate: { $gte: `${req.body.staffAttendDate}` },
   })
@@ -2629,7 +2583,6 @@ app.post("/department/holiday/:did", isLoggedIn, async (req, res) => {
 
 app.post("/student/:sid/checklist/:cid", isLoggedIn, async (req, res) => {
   const { sid, cid } = req.params;
-  // console.log(req.params);
   const student = await Student.findById({ _id: sid });
   const checklist = await Checklist.findById({ _id: cid });
   student.checklist.push(checklist);
@@ -2668,7 +2621,6 @@ app.post("/student/:sid/checklist/:cid", isLoggedIn, async (req, res) => {
 
 app.post("/user-detail", async (req, res) => {
   const { userPhoneNumber, status } = req.body;
-  // console.log(req.body);
   if (userPhoneNumber) {
     if (status === "Not Verified") {
       client.verify
@@ -2931,7 +2883,6 @@ app.post(
     const post = new UserPost({ ...req.body });
     post.imageId = "0";
     post.userCreateImage = results.key;
-    // console.log("this is fronted post data : ", post);
     user.userPosts.push(post);
     post.user = user._id;
     await user.save();
@@ -2975,7 +2926,6 @@ app.post(
     const { id } = req.params;
     const file = req.file;
     const results = await uploadFile(file);
-    // console.log("Uploaded photo in aws");
     const user = await User.findById({ _id: id });
     user.profilePhoto = results.key;
     user.photoId = "0";
@@ -3020,9 +2970,6 @@ app.post("/user/post/like", isLoggedIn, async (req, res) => {
       userpost.userlike.length >= 0 &&
       userpost.userlike.includes(String(user_sessions._id))
     ) {
-      // console.log("You already liked it");
-      // console.log(userpost.userlike.length);
-      // console.log(userpost.userlike.includes(String(user_sessions._id)));
     } else {
       userpost.userlike.push(user_sessions._id);
       await userpost.save();
@@ -3033,7 +2980,6 @@ app.post("/user/post/like", isLoggedIn, async (req, res) => {
       userpost.userlikeIns.length >= 1 &&
       userpost.userlikeIns.includes(String(institute_sessions._id))
     ) {
-      // console.log("You already liked it institute");
     } else {
       userpost.userlikeIns.push(institute_sessions._id);
       await userpost.save();
@@ -3051,7 +2997,6 @@ app.post("/user/post/unlike", isLoggedIn, async (req, res) => {
   if (user_sessions) {
     userpost.userlike.splice(user_sessions._id, 1);
     await userpost.save();
-    // console.log("delete");
     res.status(200).send({ message: "Removed from Likes", userpost });
   } else if (institute_sessions) {
     userpost.userlikeIns.splice(institute_sessions._id, 1);
@@ -3063,7 +3008,6 @@ app.post("/user/post/unlike", isLoggedIn, async (req, res) => {
 
 app.post("/user/post/comments/:id", async (req, res) => {
   const { id } = req.params;
-  // console.log(req.params, req.body);
   const userpost = await UserPost.findById({ _id: id });
   const usercomment = await new UserComment({ ...req.body });
   if (req.session.institute) {
@@ -3117,22 +3061,16 @@ app.put("/user/unfollow/institute", async (req, res) => {
 });
 
 app.post("/user-search-profile", isLoggedIn, async (req, res) => {
-  // console.log(req.body
   const user = await User.findOne({
     userLegalName: req.body.userSearchProfile,
   });
   res.status(200).send({ message: "Search User Here", user });
-  // console.log(user);
 });
 
 app.put("/user/follow-ins", async (req, res) => {
   const user = await User.findById({ _id: req.session.user._id });
   const suser = await User.findById({ _id: req.body.userFollowId });
 
-  // if(user.userCircle.includes(req.body.userFollowId) && suser.userCircle.includes(req.session.user._id)){
-  //     res.status(200).send({ message: 'You are Already In a Circle You Will not follow'})
-  // }
-  // else{
   if (user.userFollowing.includes(req.body.userFollowId)) {
     res.status(200).send({ message: "You Already Following This User" });
   } else {
@@ -3168,8 +3106,6 @@ app.put("/user/circle-ins", async (req, res) => {
       user.userFollowers.splice(req.body.followId, 1);
       suser.userCircle.push(req.session.user._id);
       user.userCircle.push(req.body.followId);
-      // console.log(id, ids)
-      // console.log(suser, user.userFollowing)
       await user.save();
       await suser.save();
     } catch {
@@ -3191,8 +3127,6 @@ app.put("/user/uncircle-ins", async (req, res) => {
       suser.userCircle.splice(req.session.user._id, 1);
       user.userFollowers.push(req.body.followId);
       suser.userFollowing.push(req.session.user._id);
-      // console.log(id, ids)
-      // console.log(suser, user.userFollowing)
       await user.save();
       await suser.save();
     } catch {
@@ -3207,9 +3141,6 @@ app.post("/user/forgot", async (req, res) => {
   const { username } = req.body;
   const user = await User.findOne({ username: username });
   const institute = await InstituteAdmin.findOne({ name: username });
-  // console.log(user);
-  // console.log(req.body);
-  // console.log(institute);
   if (user) {
     client.verify
       .services(data.SERVICEID)
@@ -3281,7 +3212,6 @@ app.post("/user/reset/password/:rid", async (req, res) => {
   if (user) {
     if (userPassword === userRePassword) {
       user.userPassword = hashUserPass;
-      // console.log(user.userPassword);
       await user.save();
       res.status(200).send({ message: "Password Changed Successfully", user });
     } else {
@@ -3368,7 +3298,4 @@ const port = process.env.PORT || 8080;
 
 app.listen(port, function () {
   console.log("Server listening on port " + port);
-  // console.log("Server listening on port " + process.env.ACCOUNTSID);
-  // console.log("Server listening on port " + process.env.SERVICEID);
-  // console.log("Server listening on port " + port);
 });
