@@ -1189,8 +1189,8 @@ app.post(
       subject: [],
     });
 
-    for (let i = 0; i < examForClass[0].length; i++) {
-      let d = examForClass[0][i].classId;
+    for (let i = 0; i < examForClass.length; i++) {
+      let d = examForClass[i].classId;
       newExam.examForClass.push(d);
     }
 
@@ -1317,7 +1317,7 @@ app.get("/subject-detail/:suid", async (req, res) => {
 // Marks Submit and Save of Student
 app.post("/student/:sid/marks/:eid/:eSubid", async (req, res) => {
   const { sid, eid, eSubid } = req.params;
-  const { obtainedMarks, subjectMarksStatus } = req.body;
+  const { obtainedMarks } = req.body;
 
   const student = await Student.findById({ _id: sid });
   const examData = await Exam.findById({ _id: eid });
