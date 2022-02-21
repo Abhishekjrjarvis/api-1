@@ -24,6 +24,7 @@ const studentSchema = new mongoose.Schema({
   studentCastCategory: { type: String },
   studentReligion: { type: String },
   studentBirthPlace: { type: String },
+  studentBookNo: { type: String },
   studentDistrict: { type: String },
   studentState: { type: String },
   studentAddress: { type: String },
