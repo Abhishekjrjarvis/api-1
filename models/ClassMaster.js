@@ -5,7 +5,7 @@ const InstituteAdmin = require("./InstituteAdmin");
 
 const classMasterSchema = new mongoose.Schema({
   className: { type: String, required: true },
-  classTitle: { type: String, required: true },
+  classTitle: { type: String },
 
   department: {
     type: mongoose.Schema.Types.ObjectId,
