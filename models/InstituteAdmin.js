@@ -6,7 +6,7 @@ const Staff = require("./Staff");
 const User = require("./User");
 const Class = require("./Class");
 const Student = require("./Student");
-const UserPost = require('./userPost')
+const UserPost = require("./userPost");
 
 const instituteAdminSchema = new mongoose.Schema({
   insName: { type: String, required: true, unique: true },
@@ -35,6 +35,8 @@ const instituteAdminSchema = new mongoose.Schema({
   insAffiliated: { type: String },
   referalPercentage: { type: String },
   rejectReason: { type: String },
+  insEditableText: { type: String },
+  insEditableTexts: { type: String },
   referalStatus: { type: String, default: "Pending" },
   insProfilePhoto: { type: String },
   insProfileCoverPhoto: { type: String },
@@ -111,15 +113,15 @@ const instituteAdminSchema = new mongoose.Schema({
   saveInsPost: [
     {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Post'
-    }
+      ref: "Post",
+    },
   ],
   saveUserPost: [
     {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'UserPost'
-    }
-  ]
+      ref: "UserPost",
+    },
+  ],
 });
 
 const InstituteAdmin = mongoose.model("InstituteAdmin", instituteAdminSchema);
