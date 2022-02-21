@@ -34,6 +34,7 @@ const studentSchema = new mongoose.Schema({
   studentParentsPhoneNumber: { type: Number, maxlength: 10, minlength: 10 },
   studentDocuments: { type: String },
   studentAadharCard: { type: String },
+  studentCertificateNo: { type: String },
   studentStatus: { type: String, default: "Not Approved" },
   studentBehaviourReportStatus: { type: String, default: "Not Ready" },
   studentPremoteStatus: { type: String, default: "Not Promoted" },
