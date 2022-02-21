@@ -1912,8 +1912,15 @@ app.get("/studentdesignationdata/:sid", async (req, res) => {
       path: "user",
     })
     .populate("studentFee")
+    .populate({
+      path: "studentMarks",
+      populate: {
+        path: "examId",
+      },
+    })
     .populate("checklist");
   // .populate('studentAttendence')
+
   res.status(200).send({ message: "Student Designation Data", student });
 });
 
