@@ -235,10 +235,10 @@ app.post("/admin/:aid/reject/ins/:id", isLoggedIn, async (req, res) => {
 // Institute Admin Routes
 
 // Institute Creation
-//for global user admin "620f306628f0503a8c27b95e"
+//for global user admin "621399aacb8da85be60981cc"
 //for local my system "61fd7c329926f9f010d96809"
 app.post("/ins-register", async (req, res) => {
-  const admins = await Admin.findById({ _id: "620f306628f0503a8c27b95e" });
+  const admins = await Admin.findById({ _id: "621399aacb8da85be60981cc" });
   const existInstitute = await InstituteAdmin.findOne({ name: req.body.name });
   const existAdmin = await Admin.findOne({ adminUserName: req.body.name });
   const existUser = await User.findOne({ username: req.body.name });
@@ -2680,7 +2680,7 @@ app.post("/user-detail-verify/:id", async (req, res) => {
 
 app.post("/profile-creation/:id", async (req, res) => {
   const { id } = req.params;
-  const admins = await Admin.findById({ _id: "620f306628f0503a8c27b95e" });
+  const admins = await Admin.findById({ _id: "621399aacb8da85be60981cc" });
   const {
     userLegalName,
     userGender,
