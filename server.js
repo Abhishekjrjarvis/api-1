@@ -641,6 +641,8 @@ app.post(
       studentLeavingRemark,
       studentLeavingBehaviour,
       studentLeavingReason,
+      studentBookNo,
+      studentCertificateNo,
     } = req.body;
     const student = await Student.findById({ _id: sid });
     student.studentLeavingReason = studentLeavingReason;
@@ -648,6 +650,8 @@ app.post(
     student.studentLeavingStudy = studentLeavingStudy;
     student.studentLeavingBehaviour = studentLeavingBehaviour;
     student.studentLeavingRemark = studentLeavingRemark;
+    student.studentBookNo = studentBookNo;
+    student.studentCertificateNo = studentCertificateNo;
     await student.save();
     res
       .status(200)
