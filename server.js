@@ -1387,22 +1387,20 @@ app.post("/student/:sid/marks/:eid/:eSubid", async (req, res) => {
   }
 
   // Update Final Report Status in Student Profile
-
   const studentData3 = await Student.findById({ _id: sid });
 
   examList2 = studentData2.studentMarks;
-  exLisLength = examSubList2.length;
+  exLisLength = examList2.length;
   filterExamSubListUpdate = examList2.filter((e) => {
     return e.allSubjectMarksStatus === "Updated";
   });
   filterListLength2 = filterExamSubListUpdate.length;
-
   if (exLisLength === filterListLength2) {
     studentData3.studentFinalReportFinalizedStatus = "Ready";
     studentData3.save();
   } else {
-    console.log(`Student Report Finilized Status Ready`);
   }
+
   res.status(200).send({ message: "Successfully Marks Save" });
 });
 
@@ -1664,7 +1662,8 @@ app.post("/ins/:id/student/:cid/reject/:sid", isLoggedIn, async (req, res) => {
 
 app.post("/student/report/finilized/:id", isLoggedIn, async (req, res) => {
   const { id } = req.params;
-  const { examList, marksTotal, stBehaviourData } = req.body;
+  const { examList, marksTotal, stBehaviourData, marksGradeStatus } = req.body;
+  console.log(marksGradeStatus);
   try {
     const student = await Student.findById({ _id: id });
 
@@ -1678,24 +1677,36 @@ app.post("/student/report/finilized/:id", isLoggedIn, async (req, res) => {
       SubjectWiseMarks: [],
     };
 
-    for (let i = 0; i < examList.length; i++) {
-      let finalSubRe = {
-        subName: examList[i].subName,
-        finalExamObtain: examList[i].finalExamObtainMarks,
-        finalExamTotal: examList[i].finalExamTotalMarks,
-        otherExamObtain: examList[i].OtherExamTotalObtainMarks,
-        otherExamTotal: examList[i].OtherExamTotalMarks,
-        finalObtainTotal: examList[i].finalObtainTotal,
-        finalTotalTotal: examList[i].finalTotalTotal,
-      };
-      finalreport.SubjectWiseMarks.push(finalSubRe);
+    if (marksGradeStatus === false) {
+      for (let i = 0; i < examList.length; i++) {
+        let finalSubRe = {
+          subName: examList[i].subName,
+          finalExamObtain: examList[i].finalExamObtainMarks,
+          finalExamTotal: examList[i].finalExamTotalMarks,
+          otherExamObtain: examList[i].OtherExamTotalObtainMarks,
+          otherExamTotal: examList[i].OtherExamTotalMarks,
+          finalObtainTotal: examList[i].finalObtainTotal,
+          finalTotalTotal: examList[i].finalTotalTotal,
+        };
+        finalreport.SubjectWiseMarks.push(finalSubRe);
+      }
+    } else if (marksGradeStatus === true) {
+      for (let i = 0; i < examList.length; i++) {
+        let finalSubRe = {
+          subName: examList[i].subName,
+          finalExamObtain: examList[i].finalExamObtainMarks,
+          finalExamTotal: examList[i].finalExamTotalMarks,
+          otherExamObtain: examList[i].OtherExamTotalObtainMarks,
+          otherExamTotal: examList[i].OtherExamTotalMarks,
+          finalObtainTotal: examList[i].finalObtainTotal,
+        };
+        finalreport.SubjectWiseMarks.push(finalSubRe);
+      }
     }
     student.studentFinalReportData = finalreport;
-    (student.studentFinalReportFinalizedStatus = "Finalized"),
-      await student.save();
-    res
-      .status(200)
-      .send({ message: "Student Final Report is Ready.", student });
+    student.studentFinalReportFinalizedStatus = "Finalized";
+    await student.save();
+    res.status(200).send({ message: "Student Final Report is Ready", student });
   } catch {}
 });
 

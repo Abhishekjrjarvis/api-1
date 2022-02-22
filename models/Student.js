@@ -66,9 +66,8 @@ const studentSchema = new mongoose.Schema({
   },
   studentFinalReportFinalizedStatus: { type: String, default: "Not Ready" },
   studentFinalReportData: {
-    finalObtainTotal: {
-      type: Number,
-    },
+    finalObtainTotal: { type: String },
+
     finalMarksTotalTotal: {
       type: Number,
     },
