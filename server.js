@@ -80,7 +80,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(
   cors({
-    origin: "http://44.200.201.35:3000",
+    origin: "http://107.20.124.171:3000",
     // origin: "http://localhost:3000",
     methods: ["GET", "POST", "PUT"],
     credentials: true,
