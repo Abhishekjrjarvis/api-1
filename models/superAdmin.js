@@ -1,6 +1,8 @@
 const mongoose = require('mongoose')
 const InstituteAdmin = require('./InstituteAdmin')
 const User = require('./User')
+const InstituteSupport = require('./InstituteSupport')
+const UserSupport = require('./UserSupport')
 
 
 const superAdminSchema = new mongoose.Schema({
@@ -60,7 +62,19 @@ const superAdminSchema = new mongoose.Schema({
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User'
         }
-    ]
+    ],
+    // userSupport: [
+    //     {
+    //         type: mongoose.Schema.Types.ObjectId,
+    //         ref: 'UserSupport'
+    //     }
+    // ],
+    // instituteSupport: [
+    //     {
+    //         type: mongoose.Schema.Types.ObjectId,
+    //         ref: 'InstituteSupport'
+    //     }
+    // ]
     
 })
 

@@ -31,6 +31,7 @@ const studentSchema = new mongoose.Schema({
   studentPhoneNumber: { type: Number, maxlength: 10, minlength: 10 },
   studentAadharNumber: { type: String, maxlength: 12, minlength: 12 },
   studentParentsName: { type: String },
+  studentPName: { type: String },
   studentParentsPhoneNumber: { type: Number, maxlength: 10, minlength: 10 },
   studentDocuments: { type: String },
   studentAadharCard: { type: String },

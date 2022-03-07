@@ -43,6 +43,8 @@ const UserAnnouncement = require("./models/UserAnnouncement");
 const SubjectMaster = require("./models/SubjectMaster");
 const ClassMaster = require("./models/ClassMaster");
 const Exam = require("./models/Exam");
+const UserSupport = require("./models/UserSupport");
+const InstituteSupport = require("./models/InstituteSupport");
 const Conversation = require("./models/Conversation");
 const Holiday = require("./models/Holiday");
 const multer = require("multer");
@@ -109,6 +111,7 @@ app.use(
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
+      secure: true,
       // expires: Date.now() + 1000 * 60 * 60 * 24 * 7,
       maxAge: Date.now() + 30 * 86400 * 1000,
     },
@@ -235,10 +238,10 @@ app.post("/admin/:aid/reject/ins/:id", isLoggedIn, async (req, res) => {
 // Institute Admin Routes
 
 // Institute Creation
-//for global user admin "621399aacb8da85be60981cc"
+//for global user admin "6216f3d9a4a1ae78e90a4098"
 //for local my system "61fd7c329926f9f010d96809"
 app.post("/ins-register", async (req, res) => {
-  const admins = await Admin.findById({ _id: "621399aacb8da85be60981cc" });
+  const admins = await Admin.findById({ _id: "6216f3d9a4a1ae78e90a4098" });
   const existInstitute = await InstituteAdmin.findOne({ name: req.body.name });
   const existAdmin = await Admin.findOne({ adminUserName: req.body.name });
   const existUser = await User.findOne({ username: req.body.name });
@@ -392,9 +395,11 @@ app.get("/insdashboard/:id", async (req, res) => {
         path: "posts",
         populate: {
           path: "comment",
+          populate: {
+            path: "institutes",
+          },
         },
       })
-      .populate("announcement")
       .populate("staff")
       .populate({
         path: "ApproveStaff",
@@ -430,6 +435,22 @@ app.get("/insdashboard/:id", async (req, res) => {
         path: "posts",
         populate: {
           path: "insUserLike",
+        },
+      })
+      .populate("announcement")
+      .populate({
+        path: "posts",
+        populate: {
+          path: "comment",
+          populate: {
+            path: "instituteUser",
+          },
+        },
+      })
+      .populate({
+        path: "supportIns",
+        populate: {
+          path: "institute",
         },
       });
     res.status(200).send({ message: "Your Institute", institute });
@@ -503,6 +524,51 @@ app.get("/insdashboard/ins-post/images/:key", async (req, res) => {
 //   await unlinkFile(file.path);
 //   res.status(200).send({ message: "Uploaded" });
 // } );
+
+app.post("/ins/:id/support", isLoggedIn, async (req, res) => {
+  const { id } = req.params;
+  const institute = await InstituteAdmin.findById({ _id: id });
+  const support = await new InstituteSupport({ ...req.body });
+  institute.supportIns.push(support);
+  support.institute = institute;
+  await institute.save();
+  await support.save();
+  res.status(200).send({ message: "Successfully Updated", institute });
+});
+
+app.get("/all/ins/support", async (req, res) => {
+  const support = await InstituteSupport.find({}).populate({
+    path: "institute",
+  });
+  res.status(200).send({ message: "all institute support data", support });
+});
+
+app.get("/all/user/support", async (req, res) => {
+  const userSupport = await UserSupport.find({}).populate({
+    path: "user",
+  });
+  res
+    .status(200)
+    .send({ message: "all institute userSupport data", userSupport });
+});
+
+app.post("/user/:id/support/:sid/reply", async (req, res) => {
+  const { id, sid } = req.params;
+  const { queryReply } = req.body;
+  const reply = await UserSupport.findById({ _id: sid });
+  reply.queryReply = queryReply;
+  await reply.save();
+  res.status(200).send({ message: "reply", reply });
+});
+
+app.post("/ins/:id/support/:sid/reply", async (req, res) => {
+  const { id, sid } = req.params;
+  const { queryReply } = req.body;
+  const reply = await InstituteSupport.findById({ _id: sid });
+  reply.queryReply = queryReply;
+  await reply.save();
+  res.status(200).send({ message: "reply", reply });
+});
 
 // Institute Display Data
 app.post("/insprofiledisplay/:id", isLoggedIn, async (req, res) => {
@@ -850,9 +916,9 @@ app.post("/post/comments/:id", async (req, res) => {
   const post = await Post.findById({ _id: id });
   const comment = await new Comment({ ...req.body });
   if (req.session.institute) {
-    comment.institutes = req.session.institute.name;
+    comment.institutes = req.session.institute;
   } else {
-    comment.instituteUser = req.session.user.username;
+    comment.instituteUser = req.session.user;
   }
   post.comment.push(comment);
   comment.post = post;
@@ -1559,6 +1625,7 @@ app.post(
     student.studentParentsPhoneNumber = req.body.studentParentsPhoneNumber;
     student.studentDocuments = req.body.studentDocuments;
     student.studentAadharCard = req.body.studentAadharCard;
+    student.studentPName = req.body.studentPName;
     student.photoId = "1";
     await student.save();
     res.status(200).send({ message: "Student Info", student });
@@ -2691,7 +2758,7 @@ app.post("/user-detail-verify/:id", async (req, res) => {
 
 app.post("/profile-creation/:id", async (req, res) => {
   const { id } = req.params;
-  const admins = await Admin.findById({ _id: "621399aacb8da85be60981cc" });
+  const admins = await Admin.findById({ _id: "6216f3d9a4a1ae78e90a4098" });
   const {
     userLegalName,
     userGender,
@@ -2774,6 +2841,9 @@ app.get("/userdashboard/:id", async (req, res) => {
       path: "userPosts",
       populate: {
         path: "userComment",
+        populate: {
+          path: "users",
+        },
       },
     })
     .populate({
@@ -2870,6 +2940,12 @@ app.get("/userdashboard/:id", async (req, res) => {
       path: "userCircle",
       populate: {
         path: "userPosts",
+      },
+    })
+    .populate({
+      path: "support",
+      populate: {
+        path: "user",
       },
     });
   res.status(200).send({ message: "Your User", user });
@@ -3034,10 +3110,10 @@ app.post("/user/post/comments/:id", async (req, res) => {
   const usercomment = await new UserComment({ ...req.body });
   if (req.session.institute) {
     // usercomment.userInstitute.push(req.session.institute._id)
-    usercomment.userInstitute = req.session.institute.name;
+    usercomment.userInstitute = req.session.institute;
   } else {
     // usercomment.users.push(req.session.user._id)
-    usercomment.users = req.session.user.username;
+    usercomment.users = req.session.user;
   }
   userpost.userComment.push(usercomment);
   usercomment.userpost = userpost;
@@ -3310,6 +3386,17 @@ app.post("/user/unsave/post", isLoggedIn, async (req, res) => {
   user.saveUsersPost.splice(userPostsData, 1);
   await user.save();
   res.status(200).send({ message: "Remove To favourites", user });
+});
+
+app.post("/user/:id/support", async (req, res) => {
+  const { id } = req.params;
+  const user = await User.findById({ _id: id });
+  const support = await new UserSupport({ ...req.body });
+  user.support.push(support);
+  support.user = user;
+  await user.save();
+  await support.save();
+  res.status(200).send({ message: "Successfully Updated", user });
 });
 
 app.get("*", (req, res) => {
