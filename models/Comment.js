@@ -17,12 +17,10 @@ const commentSchema = new mongoose.Schema({
     ref: "Post",
   },
   institutes: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'InstituteAdmin'
+    type: "String",
   },
   instituteUser: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
+    type: "String",
   },
 });
 

@@ -7,7 +7,6 @@ const User = require("./User");
 const Class = require("./Class");
 const Student = require("./Student");
 const UserPost = require("./userPost");
-const InstituteSupport = require('./InstituteSupport')
 
 const instituteAdminSchema = new mongoose.Schema({
   insName: { type: String, required: true, unique: true },
@@ -123,12 +122,6 @@ const instituteAdminSchema = new mongoose.Schema({
       ref: "UserPost",
     },
   ],
-  supportIns: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'InstituteSupport'
-    }
-  ]
 });
 
 const InstituteAdmin = mongoose.model("InstituteAdmin", instituteAdminSchema);

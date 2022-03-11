@@ -6,7 +6,6 @@ const Student = require("./Student");
 const UserAnnouncement = require("./UserAnnouncement");
 const Post = require("./Post");
 const Role = require("./Role");
-const UserSupport = require('./UserSupport')
 
 const userSchema = new mongoose.Schema({
   userPhoneNumber: { type: Number, required: true, maxlength: 10 },
@@ -101,12 +100,6 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Role",
   },
-  support: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'UserSupport'
-    }
-  ]
 });
 
 const User = mongoose.model("User", userSchema);
