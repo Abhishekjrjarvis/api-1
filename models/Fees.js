@@ -9,7 +9,7 @@ const feeSchema = new mongoose.Schema({
         required: true
     },
     feeAmount: {
-        type: String,
+        type: Number,
         required: true
     },
     feeDate: {
@@ -41,6 +41,16 @@ const feeSchema = new mongoose.Schema({
     feeStatus: {
         type: String,
         default: "Not Paid"
+    },
+    offlineStudentsList: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Student'
+        }
+    ],
+    offlineFee: {
+        type: Number,
+        default: 0
     }
 })
 

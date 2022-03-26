@@ -1,5 +1,6 @@
 const router = require("express").Router();
 const Conversation = require("../models/Conversation");
+const GroupConversation = require('../models/GroupConversation')
 
 //new conv
 
@@ -26,6 +27,19 @@ router.get("/:userId", async (req, res) => {
       members: { $in: [userId] },
     });
     res.status(200).json(conversation);
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
+
+router.get("/group/:id", async (req, res) => {
+  try {
+    const { id } = req.params
+    const conversation = await GroupConversation.find({
+      members: { $in: [id] },
+    });
+    res.status(200).json(conversation);
+    console.log(conversation)
   } catch (err) {
     res.status(500).json(err);
   }

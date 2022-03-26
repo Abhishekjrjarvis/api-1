@@ -7,6 +7,9 @@ const Fees = require("./Fees");
 const Holiday = require("./Holiday");
 const Batch = require("./Batch");
 const SubjectMaster = require("./SubjectMaster");
+const Student = require("./Student");
+const Complaint = require("./Complaint");
+const Field = require("./Field");
 
 const departmentSchema = new mongoose.Schema({
   dName: { type: String, required: true },
@@ -26,7 +29,10 @@ const departmentSchema = new mongoose.Schema({
   dStudentPresident: { type: String },
   dAdminClerk: { type: String },
   dVicePrinciple: { type: String },
-
+  photoId: { type: String, default: "1" },
+  photo: { type: String },
+  coverId: { type: String, default: "2" },
+  cover: { type: String },
   departmentClassMasters: [
     {
       type: mongoose.Schema.Types.ObjectId,
@@ -94,6 +100,30 @@ const departmentSchema = new mongoose.Schema({
     {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Holiday",
+    },
+  ],
+  class: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Class",
+    },
+  ],
+  ApproveStudent: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Student",
+    },
+  ],
+  studentComplaint: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Complaint",
+    },
+  ],
+  idCardField: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Field",
     },
   ],
 });

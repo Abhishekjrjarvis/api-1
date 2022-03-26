@@ -17,10 +17,12 @@ const userCommentSchema = new mongoose.Schema({
     ref: "UserPost",
   },
   userInstitute: {
-    type: "String",
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'InstituteAdmin'
   },
   users: {
-    type: "String",
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
   },
 });
 

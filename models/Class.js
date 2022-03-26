@@ -10,6 +10,11 @@ const Behaviour = require("./Behaviour");
 const Attendence = require("./Attendence");
 const Exam = require("./Exam");
 const ClassMaster = require("./ClassMaster");
+const Complaint = require("./Complaint");
+const StudentLeave = require("./StudentLeave");
+const StudentTransfer = require("./StudentTransfer");
+const Playlist = require("./Playlist");
+
 const classSchema = new mongoose.Schema({
   classCode: { type: String, required: true, unique: true },
   className: { type: String, required: true },
@@ -19,10 +24,10 @@ const classSchema = new mongoose.Schema({
   classStudentTotal: { type: String },
   classSubjectTotal: { type: String },
   classDisplayPerson: { type: String },
-  classStatus: {
-    type: String,
-    default: "Unlocked"
-  },
+  photoId: { type: String, default: "1" },
+  photo: { type: String },
+  coverId: { type: String, default: "2" },
+  cover: { type: String },
   masterClassName: { type: mongoose.Schema.Types.ObjectId, ref: "ClassMaster" },
   classHeadTitle: { type: String, required: true },
   subject: [
@@ -83,6 +88,59 @@ const classSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Attendence",
   },
+  department: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Department",
+  },
+  offlineTotalFee: {
+    type: Number,
+    default: 0,
+  },
+  onlineTotalFee: {
+    type: Number,
+  },
+  classTotalCollected: {
+    type: Number,
+  },
+  classTotalSubmitted: {
+    type: Number,
+  },
+  receieveFee: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Fees",
+    },
+  ],
+  submitFee: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Fees",
+    },
+  ],
+  studentComplaint: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Complaint",
+    },
+  ],
+  studentLeave: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "StudentLeave",
+    },
+  ],
+  studentTransfer: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "StudentTransfer",
+    },
+  ],
+  playlist: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Playlist",
+    },
+  ],
 });
 
 const Class = mongoose.model("Class", classSchema);

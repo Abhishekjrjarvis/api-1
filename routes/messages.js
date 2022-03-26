@@ -16,6 +16,17 @@ router.post("/", async (req, res) => {
   }
 });
 
+router.post("/group", async (req, res) => {
+  const newMessage = new GroupMessage(req.body);
+
+  try {
+    const savedMessage = await newMessage.save();
+    res.status(200).json(savedMessage);
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
+
 //get
 
 router.get("/:conversationId", async (req, res) => {

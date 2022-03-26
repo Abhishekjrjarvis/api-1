@@ -6,6 +6,16 @@ const Subject = require("./Subject");
 const Batch = require("./Batch");
 const StaffAttendenceDate = require("./StaffAttendenceDate");
 const StaffAttendence = require("./StaffAttendence");
+const Finance = require('./Finance')
+const Sport = require('./Sport')
+const SportClass = require('./SportClass')
+const Leave = require('./Leave')
+const Transfer = require('./Transfer')
+const GroupConversation = require('./GroupConversation')
+const ELearning = require("./ELearning");
+const Library = require("./Library");
+const AdmissionAdmin = require('./AdmissionAdmin')
+
 
 const staffSchema = new mongoose.Schema({
   staffCode: { type: String },
@@ -72,6 +82,58 @@ const staffSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "StaffAttendence",
   },
+  financeDepartment: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Finance'
+    }
+  ],
+  sportDepartment: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Sport'
+    }
+  ],
+  staffSportClass: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'SportClass'
+    }
+  ],
+  staffLeave: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Leave'
+    }
+  ],
+  staffTransfer: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Transfer'
+    }
+  ],
+  joinedInsGroup: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'GroupConversation'
+    }
+  ],
+  elearning: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ELearning",
+    },
+  ],
+  library: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Library",
+    },
+  ],
+  staffAdmissionAdmin: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "AdmissionAdmin"
+  }],
 });
 
 const Staff = mongoose.model("Staff", staffSchema);

@@ -54,6 +54,18 @@ const postSchema = new mongoose.Schema({
   ],
 });
 
+
+postSchema.post('findOneAndDelete', async function (doc) {
+  if (doc) {
+      await UserComment.deleteMany({
+          _id: {
+              $in: doc.userComment
+          }
+      })
+  }
+})
+
+
 const UserPost = mongoose.model("UserPost", postSchema);
 
 module.exports = UserPost;

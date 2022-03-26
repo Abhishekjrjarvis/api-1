@@ -13,7 +13,7 @@ const checklistSchema = new mongoose.Schema({
         required: true
     },
     checklistAmount: {
-        type: String,
+        type: Number,
         required: true
     },
     checklistClass:{
@@ -37,6 +37,20 @@ const checklistSchema = new mongoose.Schema({
     studentAssignedStatus: {
         type: String,
         default: 'Not Assigned'
+    },
+    studentsList: [
+        {
+            type: mongoose.Schema.Types.ObjectId, 
+            ref: 'Student'
+        }
+    ],
+    checklistFeeStatus: {
+        type: String,
+        default: "Not Paid"
+    },
+    checklistStudent: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Student'
     }
 })
 
