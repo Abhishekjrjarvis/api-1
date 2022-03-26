@@ -126,8 +126,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(
   cors({
-    origin: "http://107.20.124.171:3000",
-    // origin: "http://localhost:3000",
+    // origin: "http://107.20.124.171:3000",
+    origin: "http://localhost:3000",
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     credentials: true,
   })
@@ -6284,7 +6284,7 @@ app.post("/topic/:tid/upload", upload.single("file"), async (req, res) => {
   const file = req.file;
   const fileStream = fs.createReadStream(file.path);
   const videoTime = await getVideoDurationInSeconds(fileStream);
-  const time = new Date(videoTime * 1000).toISOString().slice(11, 19);
+  const time = new Date(videoTime * 1000).toISOString().slice(11, 16);
   const timeInHour = videoTime / 3600;
   const results = await uploadVideo(file);
   const { name, price, access } = req.body;
@@ -6337,7 +6337,7 @@ app.put("/oneVideo/:vid", upload.single("file"), async (req, res) => {
   const video = await Video.findById({ _id: vid });
   const fileStream = fs.createReadStream(file.path);
   const videoTime = await getVideoDurationInSeconds(fileStream);
-  const time = new Date(videoTime * 1000).toISOString().slice(11, 19);
+  const time = new Date(videoTime * 1000).toISOString().slice(11, 16);
   video.videoTime = time;
   video.videoName = file.originalname;
   video.name = req.body.name;
