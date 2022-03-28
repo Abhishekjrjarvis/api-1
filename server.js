@@ -100,7 +100,10 @@ const Feedback = require("./models/Feedback");
 const Payment = require("./models/Payment");
 const PlaylistPayment = require("./models/PlaylistPayment");
 const IdCardPayment = require("./models/IdCardPayment");
+const ApplyPayment = require('./models/ApplyPayment')
 const payment = require("./routes/paymentRoute");
+
+
 const dburl =
   "mongodb+srv://new-user-web-app:6o2iZ1OFMybEtVDK@cluster0.sdhjn.mongodb.net/myFirstDatabase?retryWrites=true&w=majority";
 
@@ -515,7 +518,7 @@ app.post("/ins-login", async (req, res) => {
       if (checkUserPass) {
         if (
           user.activeStatus === "Deactivated" &&
-          user.activeDate === deactivate_date
+          user.activeDate >= deactivate_date
         ) {
           user.activeStatus = "Activated";
           user.activeDate = "";
@@ -2718,6 +2721,142 @@ app.get("/batch-detail/:bid", async (req, res) => {
     });
   res.status(200).send({ message: "Batch Data", batch });
 });
+
+
+
+
+// ================ Batch Unlock Vaibhav ===================
+
+
+
+app.post("/batch-unlock/:bid",
+isLoggedIn,
+async(req, res)=> {
+ try{
+   const { bid } = req.params;
+   const batch = await Batch.findById({ _id: bid });
+   batch.batchStatus = "UnLocked";
+   await batch.save()
+   (res).status(200)
+     .send({ message: "Batch Successfully Unlocked"})
+ }
+ catch{
+   (res).status(204)
+     .send({ message: "Something Went Wrong"})
+ }
+});
+
+
+
+// ================= Identical Batch vaibhav ================
+
+
+
+
+app.post("/add-identical-batch/:did/ins/:id",
+isLoggedIn,
+async (req, res) => {
+ try {
+   const { did, id } = req.params;
+   const { batchData } = req.body;
+   const department = await Department.findById({ _id: did });
+   const institute = await InstituteAdmin.findById({ _id: id });
+   const BatchText = await Batch.findById({ _id: batchData.identicalBatch })
+   .populate({
+     path: "classroom",
+   })
+   .populate({
+     path: "subjectMasters",
+   })
+   const batchTextNew = await new Batch({
+     batchName: batchData.batchName,
+});
+   const StaffRandomCodeHandler = () =>{
+     let rand1 = Math.floor(Math.random() * 5) + 1
+     let rand2 = Math.floor(Math.random() * 5) + 1
+     let rand3 = Math.floor(Math.random() * 5) + 1
+     let rand4 = Math.floor(Math.random() * 5) + 1
+     let rand5 = Math.floor(Math.random() * 5) + 1
+      return (`${rand1}${rand2}${rand3}${rand4}${rand5}`)
+   }
+for (let i = 0; i < BatchText.classroom.length; i++) {
+ const classroomOld = await Class.findById({ _id: BatchText.classroom[i]._id })
+ .populate({
+   path: "subject"
+ })
+ const masterClass = await ClassMaster.findById({ _id: classroomOld.masterClassName });
+ const staffClass01 = await Staff.findById({ _id: classroomOld.classTeacher });
+ const classRoom = await new Class({
+   masterClassName: classroomOld.masterClassName,
+   className: classroomOld.className,
+   classTitle: classroomOld.classTitle,
+   classHeadTitle: classroomOld.classHeadTitle,
+   classCode: `C-${StaffRandomCodeHandler()}`,
+ });
+   institute.classRooms.push(classRoom);
+   classRoom.institute = institute;
+   batchTextNew.classroom.push(classRoom);
+   masterClass.classDivision.push(classRoom);
+   if (String(department.dHead._id) == String(staffClass01._id)) {
+   } else {
+     department.departmentChatGroup.push(staffClass01);
+   }
+   classRoom.batch = batchTextNew;
+   batchTextNew.batchStaff.push(staffClass01);
+   staffClass01.batches = batchTextNew;
+   staffClass01.staffClass.push(classRoom);
+   classRoom.classTeacher = staffClass01;
+   department.class.push(classRoom);
+   classRoom.department = department;
+   for (let j = 0; j < classroomOld.subject.length; j++) {
+ 
+     const subjectOld = await Subject.findById({ _id: classroomOld.subject[j]._id })
+     const subjectMaster = await SubjectMaster.findById({ _id: subjectOld.subjectMasterName })
+     const staffSub01 = await Staff.findById({ _id: subjectOld.subjectTeacherName });
+     const subject = await new Subject({
+       subjectTitle: subjectOld.subjectTitle,
+       subjectName: subjectOld.subjectName,
+       subjectMasterName: subjectOld.subjectMasterName,
+     });
+     classRoom.subject.push(subject);
+     subjectMaster.subjects.push(subject);
+     subject.class = classRoom;
+     if (String(classRoom.classTeacher) == String(staffSub01._id)) {
+     } else {
+       batchTextNew.batchStaff.push(staffSub01);
+       staffSub01.batches = batchTextNew;
+     }
+     if (String(department.dHead._id) == String(staffSub01._id)) {
+     } else {
+       department.departmentChatGroup.push(staffSub01);
+     }
+     staffSub01.staffSubject.push(subject);
+     subject.subjectTeacherName = staffSub01;
+     await subjectMaster.save();
+     await classRoom.save();
+     await staffSub01.save();
+     await subject.save();
+     await department.save();
+     }
+     await staffClass01.save();
+     await masterClass.save();
+     await classRoom.save();
+}
+   department.batches.push(batchTextNew);
+   batchTextNew.department = department;
+   batchTextNew.institute = institute;
+   await department.save();
+   await batchTextNew.save();
+   res.status(200).send({ message: "Identical Batch Created Successfully" });
+ } catch {}
+});
+
+
+
+
+
+
+
 
 // Staff Batch Class Data
 
@@ -5069,6 +5208,45 @@ app.post("/feedback/remind/:id", async (req, res) => {
   } catch {}
 });
 
+
+
+app.get("/all/application/payment/user/:id", async (req, res) => {
+  const { id } = req.params
+  const aPayment = await ApplyPayment.find({ userId: `${id}`});
+  res.status(200).send({ message: "Data", aPayment });
+});
+
+
+app.get("/all/application/list/data", async (req, res) => {
+  const application = await DepartmentApplication.find({});
+  res.status(200).send({ message: "Application Data", application });
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // ======================================== Corridor ======================================
 // app.get('/user/group/member/:id', async (req, res) =>{
 //   const { id } = req.params
@@ -5306,6 +5484,12 @@ app.get("/userdashboard/:id", async (req, res) => {
     })
     .populate("InstituteReferals")
     .populate({
+      path: "staff",
+      populate: {
+        path: "staffAdmissionAdmin",
+      },
+    })
+    .populate({
       path: "saveUserInsPost",
       populate: {
         path: "institute",
@@ -5363,7 +5547,19 @@ app.get("/userdashboard/:id", async (req, res) => {
       },
     })
     .populate("addUser")
+    .populate({
+      path: "staff",
+      populate: {
+        path: "financeDepartment",
+      },
+    })
     .populate("addUserInstitute")
+    .populate({
+      path: "staff",
+      populate: {
+        path: "sportDepartment",
+      },
+    })
     .populate({
       path: "student",
       populate: {
@@ -5374,14 +5570,33 @@ app.get("/userdashboard/:id", async (req, res) => {
       },
     })
     .populate({
+      path: "staff",
+      populate: {
+        path: "staffSportClass",
+      },
+    })
+    .populate({
       path: "support",
       populate: {
         path: "user",
       },
     })
-    .populate("videoPurchase");
+    .populate({
+      path: "staff",
+      populate: {
+        path: "elearning",
+      },
+    })
+    .populate("videoPurchase")
+    .populate({
+      path: "staff",
+      populate: {
+        path: "library",
+      },
+    })
   res.status(200).send({ message: "Your User", user });
 });
+
 
 app.get("/userdashboard/:id/user-post", async (req, res) => {
   const { id } = req.params;
@@ -6905,8 +7120,20 @@ app.post(
     });
   }
 );
+
+
+
+app.get('/application/:aid/payment/success', async(req, res) =>{
+  const { aid } = req.params
+  const apply = await DepartmentApplication.findById({_id: aid})
+  .populate('applicationFeePayment')
+  res.status(200).send({ message: 'Application fee', apply})
+})
+
+
+
 app.get("/admission-applications-details/:sid", async (req, res) => {
-  console.log("/admission-applications-details/:sid");
+  // console.log("/admission-applications-details/:sid");
   const { sid } = req.params;
   try {
     if (sid) {
@@ -6936,7 +7163,13 @@ app.get("/admission-applications-details/:sid", async (req, res) => {
             // },
             // },
           },
-        });
+        })
+        .populate({
+          path: 'departmentApplications',
+          populate: {
+            path: 'applicationFeePayment'
+          }
+        })
       res
         .status(200)
         .send({ message: "Department Application List", adAdminData });
@@ -6947,7 +7180,6 @@ app.get("/admission-applications-details/:sid", async (req, res) => {
 
 // // find Admission Admin form ins Id
 app.get("/admission-applications/details/:iid", async (req, res) => {
-  console.log("/admission-applications/details/:iid");
   const { iid } = req.params;
   const institute = await InstituteAdmin.findById({ _id: iid });
 
@@ -6967,7 +7199,13 @@ app.get("/admission-applications/details/:iid", async (req, res) => {
           populate: {
             path: "applicationForDepartment",
           },
-        });
+        })
+        .populate({
+        path: 'departmentApplications',
+        populate: {
+          path: 'applicationFeePayment'
+        }
+      })
       res
         .status(200)
         .send({ message: "Applications List Detail", adAdminData });
@@ -6978,7 +7216,7 @@ app.get("/admission-applications/details/:iid", async (req, res) => {
 });
 
 app.post("/admission-application/:sid", isLoggedIn, async (req, res) => {
-  console.log("/admission-application/:sid");
+  // console.log("/admission-application/:sid");
   const { sid } = req.params;
   const { applicationData } = req.body;
   const newApplication = await new DepartmentApplication(applicationData);
@@ -6992,15 +7230,24 @@ app.post("/admission-application/:sid", isLoggedIn, async (req, res) => {
   console.log("Application Created Sucessfully");
   res.status(200).send({ message: "Application Save Successfully" });
 });
+
+
 app.post(
   "/admission-application/:aid/student-apply/:id",
+  upload.array("file"),
   isLoggedIn,
   async (req, res) => {
-    console.log("/admission-application/:aid/student-apply/:id");
     const { aid, id } = req.params;
-    const { formData } = req.body;
+    const newPreStudent = await new PreAppliedStudent(req.body);
+    for (let file of req.files) {
+      const results = await uploadDocFile(file);
+      newPreStudent.studentAttachDocuments.push({
+        docFieldName: file.originalname,
+        docImagePath: results.key,
+      });
+      await unlinkFile(file.path);
+    }
     const userText = await User.findById({ _id: id });
-    const newPreStudent = await new PreAppliedStudent(formData);
     const dAppliText = await DepartmentApplication.findById({
       _id: aid,
     }).populate({
@@ -7009,6 +7256,7 @@ app.post(
         path: "institute",
       },
     });
+   
     const appForAppli = {
       appName: aid,
       appUpdates: [],
@@ -7027,13 +7275,16 @@ app.post(
       studentStatus: "Applied",
       studentDetails: newPreStudent._id,
     };
+     dAppliText.admissionAdminName = dAppliText.applicationForDepartment.institute.insAdmissionAdmin;
     await dAppliText.studentData.push(studentDataObj);
+  
+    console.log(dAppliText)
     await dAppliText.save();
     await newPreStudent.save();
     await userText.save();
     res.status(200).send({ message: "Application Applied Successfully" });
   }
-);
+ );
 
 app.get("/batch/class/student/:bid", async (req, res) => {
   const { bid } = req.params;
@@ -7570,6 +7821,27 @@ app.post("/department-election-creation/:did", isLoggedIn, async (req, res) => {
     .send({ message: "Department Election is Created.", classrooms });
 });
 
+
+
+
+app.get('/admission/admin/:aid/payment/success', async (req, res) =>{
+  // console.log(req.params)
+  const { aid } = req.params
+  const adAdmin = await AdmissionAdmin.findById({_id: aid})
+  .populate({
+    path: 'institute',
+    populate: {
+      path: 'financeDepart'
+    }
+  })
+  res.status(200).send({ message: 'Data', adAdmin})
+})
+
+
+
+
+
+
 ///////////////////////FOR THE DEPART AND ALL EDIT AND DELETE//////////////////
 
 app.get("/getDepartment/:did", update.getDepartment);
@@ -7602,6 +7874,10 @@ app.delete("/delHoliday/:hid", update.delHoliday);
 // updateStudentProfile; updateStaffProfile
 app.patch("/updateStudentProfile/:sid", update.updateStudentProfile);
 app.patch("/updateStaffProfile/:sid", update.updateStaffProfile);
+
+
+
+
 
 app.get("*", (req, res) => {
   res.status(404).send("Page Not Found...");

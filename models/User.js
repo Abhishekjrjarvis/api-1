@@ -166,6 +166,18 @@ const userSchema = new mongoose.Schema({
       ref: "Video",
     },
   ],
+  applicationPaymentList: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'DepartmentApplication'
+    }
+  ],
+  admissionPaymentList: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'DepartmentApplication'
+    }
+  ],
   transferInstitute: [
     {
       type: mongoose.Schema.Types.ObjectId,

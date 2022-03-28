@@ -67,7 +67,7 @@ const instituteAdminSchema = new mongoose.Schema({
   insFreeLastDate: { type: String },
   insPaymentLastDate: { type: String },
   referalPercentage: { type: Number, default: 0 },
-  insFreeCredit: { type: Number },
+  insFreeCredit: { type: Number, default: 0 },
   transferCredit: { type: Number, default: 0},
   posts: [
     {
@@ -244,6 +244,14 @@ const instituteAdminSchema = new mongoose.Schema({
     default: 0
   },
   insCreditBalance: {
+    type: Number,
+    default: 0
+  },
+  insApplicationBalance: {
+    type: Number,
+    default: 0
+  },
+  insAdmissionBalance: {
     type: Number,
     default: 0
   },

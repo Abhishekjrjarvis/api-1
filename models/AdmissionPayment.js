@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const applyPaymentSchema = new mongoose.Schema({
+const admissionPaymentSchema = new mongoose.Schema({
     resultInfo: {
         resultStatus: {
             type: String,
@@ -67,17 +67,14 @@ const applyPaymentSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    applicationId: {
+    admissionId: {
         type: String,
         required: true
     },
     insId: {
         type: String,
         required: true
-    },
-    admissionId: {
-        type: String
     }
 });
 
-module.exports = mongoose.model("ApplyPayment", applyPaymentSchema);
+module.exports = mongoose.model("AdmissionPayment", admissionPaymentSchema);

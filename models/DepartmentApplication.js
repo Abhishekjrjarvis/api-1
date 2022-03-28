@@ -7,8 +7,8 @@ const Batch = require("./Batch");
 const Student = require("./Student");
 const Department = require("./Department");
 const PreAppliedStudent = require("./PreAppliedStudent")
- 
- 
+const User = require('./User')
+const AdmissionAdmin = require('./AdmissionAdmin')
  
 const departmentApplicationSchema = new mongoose.Schema({
  
@@ -84,7 +84,23 @@ const departmentApplicationSchema = new mongoose.Schema({
                ref: "PreAppliedStudent"
            },
        }
-   ]
+   ],
+   applicationFeePayment: [
+       {
+           type: mongoose.Schema.Types.ObjectId,
+           ref: 'User'
+       }
+   ],
+   admissionFeePayment: [
+       {
+           type: mongoose.Schema.Types.ObjectId,
+           ref: 'User'
+       }
+   ],
+   admissionAdminName: {
+       type: mongoose.Schema.Types.ObjectId,
+       ref: 'AdmissionAdmin'
+   }
 });
  
 const DepartmentApplication = mongoose.model("DepartmentApplication", departmentApplicationSchema);

@@ -78,6 +78,14 @@ const financeSchema = new mongoose.Schema({
   financeEContentBalance: {
         type: Number,
         default: 0
+  },
+  financeApplicationBalance: {
+    type: Number,
+    default: 0
+  },
+  financeAdmissionBalance: {
+    type: Number, 
+    default: 0
   }
 });
 
