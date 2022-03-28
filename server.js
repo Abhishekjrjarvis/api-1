@@ -378,10 +378,10 @@ app.post("/admin/:aid/reject/ins/:id", isLoggedIn, async (req, res) => {
 // Institute Admin Routes
 
 // Institute Creation
-//for global user admin "62413eb174ac31973e2f1aca "
-//for local my system "62413eb174ac31973e2f1aca "
+//for global user admin "62413eb174ac31973e2f1aca"
+//for local my system "62413eb174ac31973e2f1aca"
 app.post("/ins-register", async (req, res) => {
-  const admins = await Admin.findById({ _id: "62413eb174ac31973e2f1aca " });
+  const admins = await Admin.findById({ _id: "62413eb174ac31973e2f1aca" });
   const existInstitute = await InstituteAdmin.findOne({ name: req.body.name });
   const existAdmin = await Admin.findOne({ adminUserName: req.body.name });
   const existUser = await User.findOne({ username: req.body.name });
@@ -400,7 +400,7 @@ app.post("/ins-register", async (req, res) => {
       admins.instituteList.push(institute);
       await admins.save();
       await institute.save();
-      res.send({ message: "Institute", institute });
+      res.status(201).send({ message: "Institute", institute });
     }
   }
 });
@@ -4838,7 +4838,7 @@ app.post("/ins/:id/add/field", async (req, res) => {
 //     const { id } = req.params;
 //     const { batchId } = req.body;
 //     const institute = await InstituteAdmin.findById({ _id: id });
-//     const admin = await Admin.findById({ _id: "62413eb174ac31973e2f1aca " });
+//     const admin = await Admin.findById({ _id: "62413eb174ac31973e2f1aca" });
 //     var batch = await Batch.findById({ _id: batchId });
 //     if (
 //       admin.instituteIdCardBatch.length >= 1 &&
@@ -4861,7 +4861,7 @@ app.post("/user/:id/user-post/:uid/report", async (req, res) => {
     const { reportStatus } = req.body;
     const user = await User.findById({ _id: id });
     const post = await UserPost.findById({ _id: uid });
-    const admin = await Admin.findById({ _id: "62413eb174ac31973e2f1aca " });
+    const admin = await Admin.findById({ _id: "62413eb174ac31973e2f1aca" });
     const report = await new Report({ reportStatus: reportStatus });
     admin.reportList.push(report);
     report.reportUserPost = post;
@@ -4878,7 +4878,7 @@ app.post("/ins/:id/ins-post/:uid/report", async (req, res) => {
     const { reportStatus } = req.body;
     const user = await User.findById({ _id: id });
     const post = await Post.findById({ _id: uid });
-    const admin = await Admin.findById({ _id: "62413eb174ac31973e2f1aca " });
+    const admin = await Admin.findById({ _id: "62413eb174ac31973e2f1aca" });
     const report = await new Report({ reportStatus: reportStatus });
     admin.reportList.push(report);
     report.reportInsPost = post;
@@ -4928,7 +4928,7 @@ app.post("/ins/:id/id-card/:bid/send/print", async (req, res) => {
     const { status } = req.body;
     const institute = await InstituteAdmin.findById({ _id: id });
     const batch = await Batch.findById({ _id: bid });
-    const admin = await Admin.findById({ _id: "62413eb174ac31973e2f1aca " });
+    const admin = await Admin.findById({ _id: "62413eb174ac31973e2f1aca" });
     admin.idCardPrinting.push(batch);
     batch.idCardStatus = status;
     await admin.save();
@@ -4943,7 +4943,7 @@ app.post("/ins/:id/id-card/:bid/un-send/print", async (req, res) => {
     // const { status } = req.body
     const institute = await InstituteAdmin.findById({ _id: id });
     const batch = await Batch.findById({ _id: bid });
-    const admin = await Admin.findById({ _id: "62413eb174ac31973e2f1aca " });
+    const admin = await Admin.findById({ _id: "62413eb174ac31973e2f1aca" });
     admin.idCardPrinting.splice(batch, 1);
     batch.idCardStatus = "";
     await admin.save();
@@ -4958,7 +4958,7 @@ app.post("/ins/:id/id-card/:bid/done", async (req, res) => {
     const { status } = req.body;
     const institute = await InstituteAdmin.findById({ _id: id });
     const batch = await Batch.findById({ _id: bid });
-    const admin = await Admin.findById({ _id: "62413eb174ac31973e2f1aca " });
+    const admin = await Admin.findById({ _id: "62413eb174ac31973e2f1aca" });
     admin.idCardPrinted.push(batch);
     admin.idCardPrinting.splice(batch, 1);
     batch.idCardStatus = status;
@@ -5313,7 +5313,7 @@ var rDate = `${r_l_year}-${r_l_month}-${r_l_day}`;
 
 app.post("/profile-creation/:id", async (req, res) => {
   const { id } = req.params;
-  const admins = await Admin.findById({ _id: "62413eb174ac31973e2f1aca " });
+  const admins = await Admin.findById({ _id: "62413eb174ac31973e2f1aca" });
   const {
     userLegalName,
     userGender,
