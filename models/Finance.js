@@ -86,6 +86,22 @@ const financeSchema = new mongoose.Schema({
   financeAdmissionBalance: {
     type: Number, 
     default: 0
+  },
+  financeIncomeCashBalance: {
+    type: Number,
+    default: 0
+  },
+  financeIncomeBankBalance: {
+    type: Number,
+    default: 0
+  },
+  financeExpenseCashBalance: {
+    type: Number,
+    default: 0
+  },
+  financeExpenseBankBalance: {
+    type: Number,
+    default: 0
   }
 });
 

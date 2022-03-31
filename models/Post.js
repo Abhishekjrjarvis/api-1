@@ -24,7 +24,7 @@ const postSchema = new mongoose.Schema({
   // },
   CreatePostStatus: {
     type: String,
-    default: "Public",
+    default: "Anyone",
   },
   insLike: [
     {
@@ -54,15 +54,15 @@ const postSchema = new mongoose.Schema({
   ],
 });
 
-postSchema.post('findOneAndDelete', async function (doc) {
+postSchema.post("findOneAndDelete", async function (doc) {
   if (doc) {
-      await Comment.deleteMany({
-          _id: {
-              $in: doc.comment
-          }
-      })
+    await Comment.deleteMany({
+      _id: {
+        $in: doc.comment,
+      },
+    });
   }
-})
+});
 
 const Post = mongoose.model("Post", postSchema);
 

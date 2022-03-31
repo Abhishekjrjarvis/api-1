@@ -1,3 +1,4 @@
+require("dotenv").config();
 const paytm = require("paytmchecksum");
 const https = require("https");
 const { v4: uuidv4 } = require("uuid");
@@ -95,9 +96,11 @@ exports.paytmVideoResponse = (req, res, next) => {
             if (status === "TXN_SUCCESS") {
               addVideoPayment(body, uid, vid, pid);
               userVideoUpdated(uid, pid, fid, vid, status, price);
-              res.redirect(`http://107.20.124.171:3000/user/${uid}/e-content`);
+              res.redirect(
+                `${process.env.FRONT_REDIRECT_URL}/user/${uid}/e-content`
+              );
             } else {
-              res.redirect(`http://107.20.124.171:3000/`);
+              res.redirect(`${process.env.FRONT_REDIRECT_URL}/`);
             }
           });
         });

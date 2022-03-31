@@ -229,6 +229,12 @@ const instituteAdminSchema = new mongoose.Schema({
       ref: 'InstituteAdmin'
     }
   ],
+  userReferral: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    }
+  ],
   supportIns: [
     {
       type: mongoose.Schema.Types.ObjectId,

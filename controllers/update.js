@@ -1,3 +1,4 @@
+require("dotenv").config();
 const Department = require("../models/Department");
 const InstituteAdmin = require("../models/InstituteAdmin");
 const Class = require("../models/Class");
@@ -23,10 +24,8 @@ exports.getDepartment = async (req, res) => {
     res.status(200).send({
       data: depart,
     });
-  } catch (error) {
-    res.status(200).send({
-      message: "Not Found",
-    });
+  } catch {
+    console.log(`SomeThing Went Wrong at this EndPoint(/getDepartment/did)`);
   }
 };
 
@@ -51,9 +50,7 @@ exports.updateDepartment = async (req, res) => {
       message: "updated",
     });
   } catch {
-    res.status(200).send({
-      message: "Not Found",
-    });
+    console.log(`SomeThing Went Wrong at this EndPoint(updateDepartment)`);
   }
 };
 
@@ -123,9 +120,75 @@ exports.delDepartment = async (req, res) => {
       message: "deleted",
     });
   } catch {
-    res.status(200).send({
-      message: "Not found",
+    console.log(`SomeThing Went Wrong at this EndPoint(editDepartment)`);
+  }
+};
+
+exports.delBatch = async (req, res) => {
+  try {
+    const batch = await Batch.findById(req.params.bid);
+
+    await batch.classroom.forEach(async (element) => {
+      const classroom = await Class.findById(element);
+      classroom.subject.forEach(async (sub) => {
+        console.log(sub);
+        await Subject.findByIdAndDelete(sub);
+      });
+
+      const classmaster = await ClassMaster.findById(classroom.masterClassName);
+      const instAdmin = await InstituteAdmin.findById(classroom.institute);
+      await classmaster.classDivision.pull(element);
+
+      await instAdmin.classRooms.pull(element);
+      instAdmin.save();
+
+      const classTeacher = await Staff.findById(classroom.classTeacher);
+
+      await classTeacher.staffClass.pull(element);
+      await classTeacher.save();
+      classroom.subject.forEach(async (subj) => {
+        const subject = await Subject.findById(subj);
+        subject.subjectExams.forEach(async (exam) => {
+          await Exam.findByIdAndDelete(exam);
+        });
+        await SubjectMaster.findByIdAndDelete(subject.subjectMasterName);
+
+        await Subject.findByIdAndDelete(subj);
+        await classTeacher.staffSubject.pull(subj);
+
+        await classTeacher.save();
+      });
+      await Class.findByIdAndDelete(element);
+
+      classmaster.save();
     });
+
+    const depar = await Department.findById(batch.department);
+    depar.batches.pull(req.params.bid);
+    await depar.save();
+    await Batch.findByIdAndDelete(req.params.bid);
+
+    res.status(200).send({
+      message: "deleted",
+    });
+  } catch (err) {
+    console.log(err);
+    console.log(`SomeThing Went Wrong at this EndPoint(delDepartment)`);
+  }
+};
+
+exports.updateBatch = async (req, res) => {
+  try {
+    await Batch.findByIdAndUpdate(req.params.bid, req.body, {
+      new: true,
+      runValidators: true,
+    });
+
+    res.status(200).send({
+      message: "updated",
+    });
+  } catch (error) {
+    console.log(`SomeThing Went Wrong at this EndPoint(UpdateDepartment)`);
   }
 };
 
@@ -140,9 +203,7 @@ exports.updateClassMaster = async (req, res) => {
       message: "updated",
     });
   } catch {
-    res.status(200).send({
-      message: "not found",
-    });
+    console.log(`SomeThing Went Wrong at this EndPoint(updateClassMaster)`);
   }
 };
 
@@ -190,9 +251,7 @@ exports.delClassMaster = async (req, res) => {
       message: "deleted",
     });
   } catch {
-    res.status(200).send({
-      message: "not found",
-    });
+    console.log(`SomeThing Went Wrong at this EndPoint(DeleteClassMaster)`);
   }
 };
 
@@ -228,9 +287,7 @@ exports.updateClass = async (req, res) => {
       message: "updated",
     });
   } catch {
-    res.status(200).send({
-      message: "not found",
-    });
+    console.log(`SomeThing Went Wrong at this EndPoint(updateClass)`);
   }
 };
 
@@ -274,10 +331,7 @@ exports.delClass = async (req, res) => {
       message: "deleted",
     });
   } catch (error) {
-    res.status(200).send({
-      message: "not found",
-    });
-    console.log(error);
+    console.log(`SomeThing Went Wrong at this EndPoint(delClass)`);
   }
 };
 
@@ -292,9 +346,7 @@ exports.updateSubjectMaster = async (req, res) => {
       message: "updated",
     });
   } catch {
-    res.status(200).send({
-      message: "not found",
-    });
+    console.log(`SomeThing Went Wrong at this EndPoint(updateSubjectMaster)`);
   }
 };
 
@@ -331,9 +383,7 @@ exports.delSubjectMaster = async (req, res) => {
       message: "deleted",
     });
   } catch (err) {
-    res.status(200).send({
-      message: "Not Found",
-    });
+    console.log(`SomeThing Went Wrong at this EndPoint(DeleteSubjectMaster)`);
   }
 };
 
@@ -369,10 +419,7 @@ exports.updateSubject = async (req, res) => {
       message: "updated",
     });
   } catch (err) {
-    console.log(err);
-    res.status(200).send({
-      message: "not found",
-    });
+    console.log(`SomeThing Went Wrong at this EndPoint(updateSubject)`);
   }
 };
 
@@ -401,10 +448,7 @@ exports.delSubject = async (req, res) => {
       message: "Deleted",
     });
   } catch (error) {
-    console.log(error);
-    res.status(200).send({
-      message: "Not found",
-    });
+    console.log(`SomeThing Went Wrong at this EndPoint(deleteSubject)`);
   }
 };
 
@@ -421,9 +465,7 @@ exports.updateSubjectTitle = async (req, res) => {
       message: "updated",
     });
   } catch (error) {
-    res.status(200).send({
-      message: "Not found",
-    });
+    console.log(`SomeThing Went Wrong at this EndPoint(updateSubjectTitle)`);
   }
 };
 
@@ -443,9 +485,7 @@ exports.delSubjectTitle = async (req, res) => {
       message: "deleted",
     });
   } catch (error) {
-    res.status(200).send({
-      message: "Not found",
-    });
+    console.log(`SomeThing Went Wrong at this EndPoint(deleteSubjectMaster)`);
   }
 };
 
@@ -474,9 +514,7 @@ exports.delChecklist = async (req, res) => {
       message: "deleted",
     });
   } catch (error) {
-    res.status(200).send({
-      message: "Not found",
-    });
+    console.log(`SomeThing Went Wrong at this EndPoint(delChecklist)`);
   }
 };
 
@@ -491,9 +529,7 @@ exports.updateFees = async (req, res) => {
       message: "updated",
     });
   } catch (error) {
-    res.status(200).send({
-      message: "Not found",
-    });
+    console.log(`SomeThing Went Wrong at this EndPoint(updateFee)`);
   }
 };
 
@@ -508,9 +544,7 @@ exports.updateHoliday = async (req, res) => {
       message: "updated",
     });
   } catch (error) {
-    res.status(204).send({
-      message: "Not found",
-    });
+    console.log(`SomeThing Went Wrong at this EndPoint(updateHoliday)`);
   }
 };
 
@@ -526,9 +560,7 @@ exports.delHoliday = async (req, res) => {
       message: "deleted",
     });
   } catch (error) {
-    res.status(404).send({
-      message: "Not found",
-    });
+    console.log(`SomeThing Went Wrong at this EndPoint(delholiday)`);
   }
 };
 
@@ -543,9 +575,7 @@ exports.updateStudentProfile = async (req, res) => {
       message: "updated",
     });
   } catch (error) {
-    res.status(204).send({
-      message: "Not found",
-    });
+    console.log(`SomeThing Went Wrong at this EndPoint(updateStudentProfile)`);
   }
 };
 
@@ -560,8 +590,6 @@ exports.updateStaffProfile = async (req, res) => {
       message: "updated",
     });
   } catch (error) {
-    res.status(204).send({
-      message: "Not found",
-    });
+    console.log(`SomeThing Went Wrong at this EndPoint(updateStaffProfile)`);
   }
 };
