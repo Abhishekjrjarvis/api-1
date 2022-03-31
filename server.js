@@ -105,7 +105,7 @@ const ApplyPayment = require("./models/ApplyPayment");
 const payment = require("./routes/paymentRoute");
 
 // const dburl = `${process.env.DB_URL}`
-const dburl = `${process.env.L_DB_URL}`;
+const dburl = `${process.env.DB_URL}`;
 
 mongoose
   .connect(dburl, {
@@ -126,8 +126,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(
   cors({
-    // origin: "http://107.20.124.171:3000",
-    origin: "http://localhost:3000",
+    origin: "http://107.20.124.171:3000",
+    // origin: "http://localhost:3000",
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     credentials: true,
   })

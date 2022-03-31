@@ -117,6 +117,20 @@ const classSchema = new mongoose.Schema({
       ref: "Fees",
     },
   ],
+  finalReportsSettings: {
+    finalReport: { type: Boolean, default: false },
+    attendence: { type: Boolean, default: false },
+    behaviour: { type: Boolean, default: false },
+    graceMarks: { type: Boolean, default: false },
+  },
+  created_at: {
+    type: Date,
+    default: Date.now,
+  },
+  classStatus: {
+    type: String,
+    default: "UnLocked",
+  },
   studentComplaint: [
     {
       type: mongoose.Schema.Types.ObjectId,
