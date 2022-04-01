@@ -99,11 +99,9 @@ exports.paytmAdmissionResponse = (req, res, next) => {
             if (status === "TXN_SUCCESS") {
               addAdmissionPayment(body, uid, aid, iid);
               userAdmissionUpdated(uid, aid, iid, fid, status, price);
-              res.redirect(
-                `${process.env.FRONT_REDIRECT_URL}/userdashboard/${uid}`
-              );
+              res.redirect(`http://107.20.124.171:3000/userdashboard/${uid}`);
             } else {
-              res.redirect(`${process.env.FRONT_REDIRECT_URL}/`);
+              res.redirect("http://107.20.124.171:3000/");
             }
           });
         });

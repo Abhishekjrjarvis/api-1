@@ -96,11 +96,9 @@ exports.paytmVideoResponse = (req, res, next) => {
             if (status === "TXN_SUCCESS") {
               addVideoPayment(body, uid, vid, pid);
               userVideoUpdated(uid, pid, fid, vid, status, price);
-              res.redirect(
-                `${process.env.FRONT_REDIRECT_URL}/user/${uid}/e-content`
-              );
+              res.redirect(`http://107.20.124.171:3000/user/${uid}/e-content`);
             } else {
-              res.redirect(`${process.env.FRONT_REDIRECT_URL}/`);
+              res.redirect(`http://107.20.124.171:3000/`);
             }
           });
         });

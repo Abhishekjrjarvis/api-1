@@ -273,12 +273,7 @@ app.get("/admindashboard/:id", async (req, res) => {
           path: "reportBy",
         },
       })
-      .populate({
-        path: "instituteIdCardBatch",
-        populate: {
-          path: "ApproveStudent",
-        },
-      })
+
       .populate({
         path: "reportList",
         populate: {
@@ -397,11 +392,11 @@ app.post("/admin/:aid/reject/ins/:id", isLoggedIn, async (req, res) => {
 // Institute Admin Routes
 
 // Institute Creation
-//for global user admin "6245cadeba6b66fccf11cbad"
-//for local my system "6245cadeba6b66fccf11cbad"
+//for global user admin "6247207f1d91bbdacaeb0883"
+//for local my system "6247207f1d91bbdacaeb0883"
 app.post("/ins-register", async (req, res) => {
   try {
-    const admins = await Admin.findById({ _id: "6245cadeba6b66fccf11cbad" });
+    const admins = await Admin.findById({ _id: "6247207f1d91bbdacaeb0883" });
     const existInstitute = await InstituteAdmin.findOne({
       name: req.body.name,
     });
@@ -2164,12 +2159,13 @@ app.post(
 app.get("/exam/:did/batch/:bid", async (req, res) => {
   try {
     const { did, bid } = req.params;
-    const examsList = await Exam.find({ examForDepartment: did })
+    console.log(bid);
+    const exams = await Exam.find({ examForDepartment: did })
       .populate("examForClass")
       .populate("subject");
-    let exams = examsList.filter((e) => {
-      return e.batch === bid;
-    });
+    // let exams = examsList.filter((e) => {
+    //   return e.batch === bid;
+    // });
     res.status(200).send({ message: "All Exam Data", exams });
   } catch {
     console.log("somethin went wrong /exam/:did/batch/:bid");
@@ -3162,7 +3158,14 @@ app.get("/staffdesignationdata/:sid", isLoggedIn, async (req, res) => {
       })
       .populate("financeDepartment")
       .populate("sportDepartment")
-      .populate("staffSportClass");
+      .populate("staffSportClass")
+      // .populate("staffAdmissionAdmin")
+      .populate({
+        path: "staffAdmissionAdmin",
+        populate: {
+          path: "adAdminName",
+        },
+      });
     res.status(200).send({ message: "Staff Designation Data", staff });
   } catch {
     console.log(
@@ -3259,6 +3262,79 @@ app.get("/staffdepartment/:did", async (req, res) => {
 });
 
 //Staff Class Info
+app.get("/staffclass/:cid", async (req, res) => {
+  try {
+    const { cid } = req.params;
+    const classes = await Class.findById({ _id: cid })
+      .populate("subject")
+      .populate("student")
+      .populate({
+        path: "ApproveStudent",
+        populate: {
+          path: "onlineFeeList",
+        },
+      })
+      .populate({
+        path: "institute",
+        populate: {
+          path: "financeDepart",
+          populate: {
+            path: "classRoom",
+          },
+        },
+      })
+      .populate({
+        path: "ApproveStudent",
+        populate: {
+          path: "offlineFeeList",
+        },
+      })
+      .populate({
+        path: "batch",
+      })
+      .populate({
+        path: "ApproveStudent",
+        populate: {
+          path: "onlineCheckList",
+        },
+      })
+      .populate({
+        path: "classTeacher",
+      })
+      .populate("fee")
+      .populate("department")
+      .populate({
+        path: "ApproveStudent",
+        populate: {
+          path: "offlineCheckList",
+        },
+      })
+      .populate("receieveFee")
+      .populate("checklist")
+      .populate("submitFee")
+      .populate({
+        path: "studentComplaint",
+        populate: {
+          path: "student",
+        },
+      })
+      .populate({
+        path: "studentLeave",
+        populate: {
+          path: "student",
+        },
+      })
+      .populate({
+        path: "studentTransfer",
+        populate: {
+          path: "student",
+        },
+      });
+    res.status(200).send({ message: "Class Profile Data", classes });
+  } catch {
+    console.log(`SomeThing Went Wrong at this EndPoint(/staffclass/:sid)`);
+  }
+});
 
 app.get("/staffclass/:sid", async (req, res) => {
   try {
@@ -5971,7 +6047,7 @@ app.post("/ins/:id/add/field", async (req, res) => {
 //     const { id } = req.params;
 //     const { batchId } = req.body;
 //     const institute = await InstituteAdmin.findById({ _id: id });
-//     const admin = await Admin.findById({ _id: "6245cadeba6b66fccf11cbad"  });
+//     const admin = await Admin.findById({ _id: "6247207f1d91bbdacaeb0883"  });
 //     var batch = await Batch.findById({ _id: batchId });
 //     if (
 //       admin.instituteIdCardBatch.length >= 1 &&
@@ -5994,7 +6070,7 @@ app.post("/user/:id/user-post/:uid/report", async (req, res) => {
     const { reportStatus } = req.body;
     const user = await User.findById({ _id: id });
     const post = await UserPost.findById({ _id: uid });
-    const admin = await Admin.findById({ _id: "6245cadeba6b66fccf11cbad" });
+    const admin = await Admin.findById({ _id: "6247207f1d91bbdacaeb0883" });
     const report = await new Report({ reportStatus: reportStatus });
     admin.reportList.push(report);
     report.reportUserPost = post;
@@ -6015,7 +6091,7 @@ app.post("/ins/:id/ins-post/:uid/report", async (req, res) => {
     const { reportStatus } = req.body;
     const user = await User.findById({ _id: id });
     const post = await Post.findById({ _id: uid });
-    const admin = await Admin.findById({ _id: "6245cadeba6b66fccf11cbad" });
+    const admin = await Admin.findById({ _id: "6247207f1d91bbdacaeb0883" });
     const report = await new Report({ reportStatus: reportStatus });
     admin.reportList.push(report);
     report.reportInsPost = post;
@@ -6077,7 +6153,7 @@ app.post("/ins/:id/id-card/:bid/send/print", async (req, res) => {
     const { status } = req.body;
     const institute = await InstituteAdmin.findById({ _id: id });
     const batch = await Batch.findById({ _id: bid });
-    const admin = await Admin.findById({ _id: "6245cadeba6b66fccf11cbad" });
+    const admin = await Admin.findById({ _id: "6247207f1d91bbdacaeb0883" });
     admin.idCardPrinting.push(batch);
     batch.idCardStatus = status;
     await admin.save();
@@ -6096,7 +6172,7 @@ app.post("/ins/:id/id-card/:bid/un-send/print", async (req, res) => {
     // const { status } = req.body
     const institute = await InstituteAdmin.findById({ _id: id });
     const batch = await Batch.findById({ _id: bid });
-    const admin = await Admin.findById({ _id: "6245cadeba6b66fccf11cbad" });
+    const admin = await Admin.findById({ _id: "6247207f1d91bbdacaeb0883" });
     admin.idCardPrinting.splice(batch, 1);
     batch.idCardStatus = "";
     await admin.save();
@@ -6115,7 +6191,7 @@ app.post("/ins/:id/id-card/:bid/done", async (req, res) => {
     const { status } = req.body;
     const institute = await InstituteAdmin.findById({ _id: id });
     const batch = await Batch.findById({ _id: bid });
-    const admin = await Admin.findById({ _id: "6245cadeba6b66fccf11cbad" });
+    const admin = await Admin.findById({ _id: "6247207f1d91bbdacaeb0883" });
     admin.idCardPrinted.push(batch);
     admin.idCardPrinting.splice(batch, 1);
     batch.idCardStatus = status;
@@ -6618,7 +6694,7 @@ var rDate = `${r_l_year}-${r_l_month}-${r_l_day}`;
 app.post("/profile-creation/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const admins = await Admin.findById({ _id: "6245cadeba6b66fccf11cbad" });
+    const admins = await Admin.findById({ _id: "6247207f1d91bbdacaeb0883" });
     const {
       userLegalName,
       userGender,
@@ -6876,7 +6952,9 @@ app.get("/userdashboard/:id", async (req, res) => {
           path: "library",
         },
       })
-      .populate("InstituteReferals");
+      .populate("InstituteReferals")
+      .populate("admissionPaymentList");
+
     res.status(200).send({ message: "Your User", user });
   } catch {
     console.log(`SomeThing Went Wrong at this EndPoint(/userdashboard/:id)`);
@@ -9472,7 +9550,6 @@ app.post(
   "/admission-application/:aid/class-allot-student/:stid",
   async (req, res) => {
     try {
-      console.log("/admission-application/class-allot-student");
       const { aid, stid } = req.params;
       const { classAllotData } = req.body;
       const dAppliText = await DepartmentApplication.findById({ _id: aid })
@@ -9498,25 +9575,27 @@ app.post(
       const classText = await Class.findById({ _id: classAllotData.classId });
       const StText = await PreAppliedStudent.findById({ _id: stid });
       const studentData = await new Student({
+        studentProfilePhoto: StText.studentAttachDocuments[0].docImagePath,
+        photoId: "1",
         studentFirstName: StText.studentFirstName,
         studentMiddleName: StText.studentMiddleName,
         studentLastName: StText.studentLastName,
         studentDOB: StText.studentDOB,
         studentGender: StText.studentGender,
         studentNationality: StText.studentNationality,
-        studentMTongue: StText.studentMotherTongue,
+        studentMTongue: StText.studentMTongue,
         studentCast: StText.studentCast,
-        studentCastCategory: StText.studentCategory,
+        studentCastCategory: StText.studentCastCategory,
         studentReligion: StText.studentReligion,
         studentBirthPlace: StText.studentBirthPlace,
         studentDistrict: StText.studentDistrict,
         studentState: StText.studentState,
         studentAddress: StText.studentAddress,
-        studentPhoneNumber: StText.studentSelfContactNo,
-        studentParentsName: StText.studentPName,
-        studentParentsPhoneNumber: StText.studentParents_GuardianContactNo,
-        studentDocuments: "",
-        studentMothersName: StText.studentMothersName,
+        studentPhoneNumber: StText.studentPhoneNumber,
+        studentParentsName: StText.studentParents_Name,
+        studentParentsPhoneNumber: StText.studentParents_ContactNo,
+        studentDocuments: StText.studentAttachDocuments[1].docImagePath,
+        studentMothersName: StText.studentPName,
       });
 
       const appStList = dAppliText.studentData;
@@ -9545,7 +9624,7 @@ app.post(
       studentData.institute = institute;
       userText.student.push(studentData);
       studentData.user = userText;
-      classText.student.push(studentData);
+      classText.ApproveStudent.push(studentData);
       studentData.studentClass = classText;
 
       await institute.save();
@@ -9777,6 +9856,58 @@ app.post("/class-promote/allStudent/:cid", async (req, res) => {
   console.log("Student Premoted SuccessFully");
   res.status(200).send({ message: "Students Premoted SuccessFully" });
 });
+
+app.get("/admission-admin/detail/:aaid", async (req, res) => {
+  try {
+    const { aaid } = req.params;
+    console.log(aaid);
+    const admissionAdmin = await AdmissionAdmin.findById({ _id: aaid })
+      .populate("adAdminName")
+      .populate({
+        path: "institute",
+        populate: {
+          path: "financeDepart",
+        },
+        populate: {
+          path: "depart",
+          populate: {
+            path: "batches",
+          },
+          populate: {
+            path: "class",
+          },
+        },
+      });
+    res.status(200).send({ admissionAdmin });
+  } catch {
+    console.log(
+      `SomeThing Went Wrong at this EndPoint(/admission-admin/detials/:aaid)`
+    );
+  }
+});
+
+app.post(
+  "/staff/admission-admin-info/:aid/set-info",
+  isLoggedIn,
+  isApproved,
+  async (req, res) => {
+    try {
+      const { aid } = req.params;
+      console.log(aid);
+      const admissionInfoData = req.body;
+      const admissionAdmin = await AdmissionAdmin.findById({ _id: aid });
+      admissionAdmin.contactNumber = admissionInfoData.admissionPhoneNumber;
+      admissionAdmin.emailId = admissionInfoData.admissionEmail;
+      admissionAdmin.about = admissionInfoData.admissionAbout;
+      await admissionAdmin.save();
+      res.status(200).send(admissionAdmin);
+    } catch {
+      console.log(
+        `SomeThing Went Wrong at this EndPoint(/staff/admission-admin-info/:aid)`
+      );
+    }
+  }
+);
 
 // Department Batch Class and Subject Lock and Student Premote Rought Start Here
 

@@ -100,10 +100,10 @@ exports.paytmApplicationResponse = (req, res, next) => {
               addApplicationPayment(body, uid, aid, iid);
               userApplicationUpdated(uid, aid, iid, fid, status, price);
               res.redirect(
-                `${process.env.FRONT_REDIRECT_URL}/user/${uid}/insjoinandapply/${iid}/application-apply/${aid}`
+                `http://107.20.124.171:3000/user/${uid}/insjoinandapply/${iid}/application-apply/${aid}`
               );
             } else {
-              res.redirect(`${process.env.FRONT_REDIRECT_URL}/`);
+              res.redirect(`http://107.20.124.171:3000/`);
             }
           });
         });

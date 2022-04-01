@@ -126,10 +126,10 @@ exports.paytmResponse = (req, res, next) => {
               addPayment(body, sid, fid, uid);
               studentPaymentUpdated(fiid, sid, fid, status, price);
               res.redirect(
-                `${process.env.FRONT_REDIRECT_URL}/user/${uid}/student/fee/${sid}`
+                `http://107.20.124.171:3000/user/${uid}/student/fee/${sid}`
               );
             } else {
-              res.redirect(`${process.env.FRONT_REDIRECT_URL}/`);
+              res.redirect(`http://107.20.124.171:3000/`);
             }
             // res.redirect(`${req.protocol}://${req.get("host")}/order/${body.orderId}`)
           });
@@ -335,10 +335,10 @@ exports.paytmEContentResponse = (req, res, next) => {
               addEContentPayment(body, uid, pid);
               userEContentUpdated(uid, pid, fid, status, price);
               res.redirect(
-                `${process.env.FRONT_REDIRECT_URL}/user/${uid}/e-content/playlist/${pid}`
+                `http://107.20.124.171:3000/user/${uid}/e-content/playlist/${pid}`
               );
             } else {
-              res.redirect(`${process.env.FRONT_REDIRECT_URL}/`);
+              res.redirect(`http://107.20.124.171:3000/`);
             }
           });
         });
@@ -490,11 +490,9 @@ exports.paytmIdCardResponse = (req, res, next) => {
             if (status === "TXN_SUCCESS") {
               addIdCardPayment(body, id, batchId);
               userIdCardUpdated(id, batchId, status, price);
-              res.redirect(
-                `${process.env.FRONT_REDIRECT_URL}/ins/${id}/student/card`
-              );
+              res.redirect(`http://107.20.124.171:3000/ins/${id}/student/card`);
             } else {
-              res.redirect(`${process.env.FRONT_REDIRECT_URL}/`);
+              res.redirect(`http://107.20.124.171:3000/`);
             }
           });
         });
@@ -511,7 +509,7 @@ exports.paytmIdCardResponse = (req, res, next) => {
 const addIdCardPayment = async (data, insId, bid) => {
   try {
     const idcard = await new IdCardPayment(data);
-    const admin = await Admin.findById({ _id: `${process.env.ADMIN_ID}` });
+    const admin = await Admin.findById({ _id: "6247207f1d91bbdacaeb0883" });
     idcard.insId = insId;
     idcard.batchId = bid;
     admin.idCardPaymentList.push(idcard);
@@ -527,7 +525,8 @@ const addIdCardPayment = async (data, insId, bid) => {
 const userIdCardUpdated = async (insId, bid, statusType, tx_iAmounts) => {
   try {
     const institute = await InstituteAdmin.findById({ _id: insId });
-    const admin = await Admin.findById({ _id: `${process.env.ADMIN_ID}` });
+    const admin = await Admin.findById({ _id: "6247207f1d91bbdacaeb0883" });
+    // const admin = await Admin.findById({ _id: "6247207f1d91bbdacaeb0883" });
     var batch = await Batch.findById({ _id: bid });
     institute.idCardBatch.push(batch);
     admin.instituteIdCardBatch.push(batch);

@@ -18,7 +18,7 @@ const admissionAdminSchema = new mongoose.Schema({
   photo: { type: String },
   coverId: { type: String, default: "2" },
   cover: { type: String },
-
+  about: { type: String },
   feeCollection: [
     {
       financialYear: { type: String },
