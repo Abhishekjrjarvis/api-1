@@ -23,7 +23,7 @@ exports.processAdmissionPayment = async (req, res, next) => {
   params["ORDER_ID"] = "oid" + uuidv4();
   params["CUST_ID"] = process.env.PAYTM_CUST_ID;
   params["TXN_AMOUNT"] = amount;
-  params["CALLBACK_URL"] = `http://${req.get(
+  params["CALLBACK_URL"] = `https://${req.get(
     "host"
   )}/api/v1/admission/callback/${uid}/apply/${aid}/ins/${iid}/finance/${fid}`;
   let paytmChecksum = paytm.generateSignature(
@@ -99,9 +99,9 @@ exports.paytmAdmissionResponse = (req, res, next) => {
             if (status === "TXN_SUCCESS") {
               addAdmissionPayment(body, uid, aid, iid);
               userAdmissionUpdated(uid, aid, iid, fid, status, price);
-              res.redirect(`http://107.20.124.171:3000/userdashboard/${uid}`);
+              res.redirect(`https://qviple.com/userdashboard/${uid}`);
             } else {
-              res.redirect("http://107.20.124.171:3000/");
+              res.redirect("https://qviple.com/");
             }
           });
         });
@@ -141,19 +141,57 @@ const userAdmissionUpdated = async (
   tx_adAmount
 ) => {
   try {
-    const user = await User.findById({ _id: userId });
-    const admission = await DepartmentApplication.findById({ _id: applyId });
+    // const user = await User.findById({ _id: userId });
     const institute = await InstituteAdmin.findById({ _id: insId });
     const finance = await Finance.findById({ _id: financeId });
-    admission.admissionFeePayment.push(user);
-    // user.admissionPaymentList.push(admission)
+    const dAppliText = await DepartmentApplication.findById({ _id: applyId })
+      .populate({
+        path: "studentData",
+        populate: {
+          path: "studentDetails",
+          populate: {
+            path: "userId",
+          },
+        },
+      })
+      .populate({
+        path: "applicationForDepartment",
+        populate: {
+          path: "institute",
+        },
+      });
+    const appStList = dAppliText.studentData;
+    const preStudNum = appStList.findIndex(
+      (x) => x.studentDetails.userId._id == userId
+    );
+    dAppliText.studentData[preStudNum].studentStatus = "AdPayed";
+    dAppliText.studentData[preStudNum].admissionFeeStatus = "Payed";
+    const userText = await User.findById({
+      _id: userId,
+    });
+    const notiObj = {
+      notificationType: 1,
+      notification: `Your admission have been confirmed. Please visit ${dAppliText.applicationForDepartment.institute.insName} with Required Documents to confirm your seat.  
+        `,
+    };
+    const indexofApp = userText.appliedForApplication.findIndex(
+      (x) => (x.appName = dAppliText._id)
+    );
+
+    userText.appliedForApplication[indexofApp].appUpdates.pop();
+    userText.appliedForApplication[indexofApp].appUpdates.push(notiObj);
+
+    dAppliText.admissionFeePayment.push(userText);
     institute.insAdmissionBalance =
       institute.insAdmissionBalance + parseInt(tx_adAmount);
     finance.financeAdmissionBalance =
       finance.financeAdmissionBalance + parseInt(tx_adAmount);
-    await admission.save();
-    // await user.save()
+
+    await userText.save();
+    await dAppliText.save();
     await institute.save();
     await finance.save();
-  } catch {}
+  } catch {
+    console.log("something went wrong in Admission Status");
+  }
 };

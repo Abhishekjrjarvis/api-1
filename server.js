@@ -104,8 +104,8 @@ const IdCardPayment = require("./models/IdCardPayment");
 const ApplyPayment = require("./models/ApplyPayment");
 const payment = require("./routes/paymentRoute");
 
-// const dburl = `${process.env.DB_URL}`
 const dburl = `${process.env.DB_URL}`;
+// const dburl = `${process.env.L_DB_URL}`;
 
 mongoose
   .connect(dburl, {
@@ -126,8 +126,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(
   cors({
-    origin: "http://107.20.124.171:3000",
-    // origin: "http://localhost:3000",
+    // origin: "http://107.20.124.171:3000",
+    origin: "https://qviple.com",
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     credentials: true,
   })
@@ -5737,11 +5737,11 @@ app.post("/ins/:id/staff/:sid/transfer/:ssid/grant/:eid", async (req, res) => {
       .populate("staffClass")
       .populate("staffSubject")
       .populate("financeDepartment")
-      .populate("sportDepartment")
-      .populate("staffSportClass")
-      .populate("elearning")
       .populate("library")
       .populate("staffAdmissionAdmin");
+    // .populate("sportDepartment")
+    // .populate("staffSportClass")
+    // .populate("elearning")
     transfer.transferStatus = status;
     await transfer.save();
     for (let i = 0; i < transferStaff.staffDepartment.length; i++) {
@@ -5788,39 +5788,39 @@ app.post("/ins/:id/staff/:sid/transfer/:ssid/grant/:eid", async (req, res) => {
       await finance.save();
       await transferStaff.save();
     }
-    for (let i = 0; i < transferStaff.sportDepartment.length; i++) {
-      const sport = await Sport.findById({
-        _id: transferStaff.sportDepartment[i]._id,
-      });
-      staffNew.sportDepartment.push(sport);
-      sport.sportHead = staffNew;
-      transferStaff.sportDepartment.pull(sport);
-      await staffNew.save();
-      await sport.save();
-      await transferStaff.save();
-    }
-    for (let i = 0; i < transferStaff.staffSportClass.length; i++) {
-      const sportClass = await SportClass.findById({
-        _id: transferStaff.staffSportClass[i]._id,
-      });
-      staffNew.staffSportClass.push(sportClass);
-      sportClass.sportClassHead = staffNew;
-      transferStaff.staffSportClass.pull(sportClass);
-      await staffNew.save();
-      await sportClass.save();
-      await transferStaff.save();
-    }
-    for (let i = 0; i < transferStaff.elearning.length; i++) {
-      const elearn = await ELearning.findById({
-        _id: transferStaff.elearning[i]._id,
-      });
-      staffNew.elearning.push(elearn);
-      elearn.elearningHead = staffNew;
-      transferStaff.elearning.pull(elearn);
-      await staffNew.save();
-      await elearn.save();
-      await transferStaff.save();
-    }
+    // for (let i = 0; i < transferStaff.sportDepartment.length; i++) {
+    //   const sport = await Sport.findById({
+    //     _id: transferStaff.sportDepartment[i]._id,
+    //   });
+    //   staffNew.sportDepartment.push(sport);
+    //   sport.sportHead = staffNew;
+    //   transferStaff.sportDepartment.pull(sport);
+    //   await staffNew.save();
+    //   await sport.save();
+    //   await transferStaff.save();
+    // }
+    // for (let i = 0; i < transferStaff.staffSportClass.length; i++) {
+    //   const sportClass = await SportClass.findById({
+    //     _id: transferStaff.staffSportClass[i]._id,
+    //   });
+    //   staffNew.staffSportClass.push(sportClass);
+    //   sportClass.sportClassHead = staffNew;
+    //   transferStaff.staffSportClass.pull(sportClass);
+    //   await staffNew.save();
+    //   await sportClass.save();
+    //   await transferStaff.save();
+    // }
+    // for (let i = 0; i < transferStaff.elearning.length; i++) {
+    //   const elearn = await ELearning.findById({
+    //     _id: transferStaff.elearning[i]._id,
+    //   });
+    //   staffNew.elearning.push(elearn);
+    //   elearn.elearningHead = staffNew;
+    //   transferStaff.elearning.pull(elearn);
+    //   await staffNew.save();
+    //   await elearn.save();
+    //   await transferStaff.save();
+    // }
     for (let i = 0; i < transferStaff.library.length; i++) {
       const libr = await Library.findById({
         _id: transferStaff.library[i]._id,
@@ -9159,12 +9159,14 @@ app.get("/user/:id/applied-application-details/:aid", async (req, res) => {
   const { id, aid } = req.params;
   const ActApplication = await DepartmentApplication.findById({
     _id: aid,
-  }).populate({
-    path: "applicationForDepartment",
-    populate: {
-      path: "institute",
-    },
-  });
+  })
+    .populate({
+      path: "applicationForDepartment",
+      populate: {
+        path: "institute",
+      },
+    })
+    .populate("admissionFeePayment");
   res
     .status(200)
     .send({ message: "Student Applied Application Details", ActApplication });
@@ -9363,67 +9365,67 @@ app.post("/admission-application/select-student/:aid", async (req, res) => {
   }
 });
 
-app.post(
-  "/admission-application/applicationfee-payed-student/:aid/:id",
-  async (req, res) => {
-    try {
-      const { aid, id } = req.params;
-      const { actRound } = req.body;
-      const dAppliText = await DepartmentApplication.findById({ _id: aid })
-        .populate({
-          path: "studentData",
-          populate: {
-            path: "studentDetails",
-            populate: {
-              path: "userId",
-            },
-          },
-        })
-        .populate({
-          path: "applicationForDepartment",
-          populate: {
-            path: "institute",
-          },
-        });
-      const appStList = dAppliText.studentData;
-      const preStudNum = appStList.findIndex(
-        (x) => x.studentDetails.userId._id == id
-      );
-      dAppliText.studentData[preStudNum].studentStatus = "AdPayed";
-      dAppliText.studentData[preStudNum].admissionFeeStatus = "Payed";
-      // dAppliText.studentData[preStudNum].studentSelectedRound = actRound.roundName;
-      const userText = await User.findById({
-        _id: appStList[preStudNum].studentDetails.userId._id,
-      });
-      const notiObj = {
-        notificationType: 1,
-        notification: `Your admission have been confirmed. Please visit ${
-          dAppliText.applicationForDepartment.institute.insName
-        } with Required Documents to confirm your seat. Last Date for document submission -  
-          ${moment(actRound.candidateSelectionLastDate).format("DD/MM/YYYY")}.`,
-        // actonBtnText: "Pay & confirm",
-        // deActBtnText: "Float",
-      };
-      const indexofApp = userText.appliedForApplication.findIndex(
-        (x) => (x.appName = dAppliText._id)
-      );
+// app.post(
+//   "/admission-application/applicationfee-payed-student/:aid/:id",
+//   async (req, res) => {
+//     try {
+//       const { aid, id } = req.params;
+//       const { actRound } = req.body;
+//       const dAppliText = await DepartmentApplication.findById({ _id: aid })
+//         .populate({
+//           path: "studentData",
+//           populate: {
+//             path: "studentDetails",
+//             populate: {
+//               path: "userId",
+//             },
+//           },
+//         })
+//         .populate({
+//           path: "applicationForDepartment",
+//           populate: {
+//             path: "institute",
+//           },
+//         });
+//       const appStList = dAppliText.studentData;
+//       const preStudNum = appStList.findIndex(
+//         (x) => x.studentDetails.userId._id == id
+//       );
+//       dAppliText.studentData[preStudNum].studentStatus = "AdPayed";
+//       dAppliText.studentData[preStudNum].admissionFeeStatus = "Payed";
+//       // dAppliText.studentData[preStudNum].studentSelectedRound = actRound.roundName;
+//       const userText = await User.findById({
+//         _id: appStList[preStudNum].studentDetails.userId._id,
+//       });
+//       const notiObj = {
+//         notificationType: 1,
+//         notification: `Your admission have been confirmed. Please visit ${
+//           dAppliText.applicationForDepartment.institute.insName
+//         } with Required Documents to confirm your seat. Last Date for document submission -
+//           ${moment(actRound.candidateSelectionLastDate).format("DD/MM/YYYY")}.`,
+//         // actonBtnText: "Pay & confirm",
+//         // deActBtnText: "Float",
+//       };
+//       const indexofApp = userText.appliedForApplication.findIndex(
+//         (x) => (x.appName = dAppliText._id)
+//       );
 
-      userText.appliedForApplication[indexofApp].appUpdates.pop();
-      userText.appliedForApplication[indexofApp].appUpdates.push(notiObj);
+//       userText.appliedForApplication[indexofApp].appUpdates.pop();
+//       userText.appliedForApplication[indexofApp].appUpdates.push(notiObj);
 
-      await userText.save();
-      await dAppliText.save();
+//       await userText.save();
+//       await dAppliText.save();
 
-      res
-        .status(200)
-        .send({ message: "Student Application Fee Payed SuccessFully" });
-    } catch {
-      console.log(
-        `SomeThing Went Wrong at this EndPoint(/admission-application/applicationfee-payed-student/:aid/:id)`
-      );
-    }
-  }
-);
+//       res
+//         .status(200)
+//         .send({ message: "Student Application Fee Payed SuccessFully" });
+//     } catch {
+//       console.log(
+//         `SomeThing Went Wrong at this EndPoint(/admission-application/applicationfee-payed-student/:aid/:id)`
+//       );
+//     }
+//   }
+// );
 
 app.post(
   "/admission-application/application-floated-student/:aid/:id",
@@ -9550,6 +9552,7 @@ app.post(
   "/admission-application/:aid/class-allot-student/:stid",
   async (req, res) => {
     try {
+      console.log("/admission-application/class-allot-student");
       const { aid, stid } = req.params;
       const { classAllotData } = req.body;
       const dAppliText = await DepartmentApplication.findById({ _id: aid })

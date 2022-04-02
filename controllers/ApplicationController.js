@@ -23,7 +23,7 @@ exports.processApplicationPayment = async (req, res, next) => {
   params["ORDER_ID"] = "oid" + uuidv4();
   params["CUST_ID"] = process.env.PAYTM_CUST_ID;
   params["TXN_AMOUNT"] = amount;
-  params["CALLBACK_URL"] = `http://${req.get(
+  params["CALLBACK_URL"] = `https://${req.get(
     "host"
   )}/api/v1/application/callback/${uid}/apply/${aid}/ins/${iid}/finance/${fid}`;
   let paytmChecksum = paytm.generateSignature(
@@ -100,10 +100,10 @@ exports.paytmApplicationResponse = (req, res, next) => {
               addApplicationPayment(body, uid, aid, iid);
               userApplicationUpdated(uid, aid, iid, fid, status, price);
               res.redirect(
-                `http://107.20.124.171:3000/user/${uid}/insjoinandapply/${iid}/application-apply/${aid}`
+                `https://qviple.com/user/${uid}/insjoinandapply/${iid}/application-apply/${aid}`
               );
             } else {
-              res.redirect(`http://107.20.124.171:3000/`);
+              res.redirect(`https://qviple.com/`);
             }
           });
         });

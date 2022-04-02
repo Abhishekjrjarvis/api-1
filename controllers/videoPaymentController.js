@@ -23,7 +23,7 @@ exports.processVideoPayment = async (req, res, next) => {
   params["ORDER_ID"] = "oid" + uuidv4();
   params["CUST_ID"] = process.env.PAYTM_CUST_ID;
   params["TXN_AMOUNT"] = amount;
-  params["CALLBACK_URL"] = `http://${req.get(
+  params["CALLBACK_URL"] = `https://${req.get(
     "host"
   )}/api/v1/e-content/video/callback/user/${uid}/playlist/${pid}/video/${vid}/ins/${fid}`;
   let paytmChecksum = paytm.generateSignature(
@@ -96,9 +96,9 @@ exports.paytmVideoResponse = (req, res, next) => {
             if (status === "TXN_SUCCESS") {
               addVideoPayment(body, uid, vid, pid);
               userVideoUpdated(uid, pid, fid, vid, status, price);
-              res.redirect(`http://107.20.124.171:3000/user/${uid}/e-content`);
+              res.redirect(`https://qviple.com/user/${uid}/e-content`);
             } else {
-              res.redirect(`http://107.20.124.171:3000/`);
+              res.redirect(`https://qviple.com/`);
             }
           });
         });

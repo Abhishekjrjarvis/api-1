@@ -34,7 +34,7 @@ exports.processPayment = async (req, res, next) => {
   params["CUST_ID"] = process.env.PAYTM_CUST_ID;
   params["TXN_AMOUNT"] = amount;
   // params["CALLBACK_URL"] = `${req.protocol}://${req.get("host")}/api/v1/callback`;
-  params["CALLBACK_URL"] = `http://${req.get(
+  params["CALLBACK_URL"] = `https://${req.get(
     "host"
   )}/api/v1/callback/pay/${fiid}/${uid}/student/${sid}/fee/${fid}`;
 
@@ -125,11 +125,9 @@ exports.paytmResponse = (req, res, next) => {
             if (status === "TXN_SUCCESS") {
               addPayment(body, sid, fid, uid);
               studentPaymentUpdated(fiid, sid, fid, status, price);
-              res.redirect(
-                `http://107.20.124.171:3000/user/${uid}/student/fee/${sid}`
-              );
+              res.redirect(`https://qviple.com/user/${uid}/student/fee/${sid}`);
             } else {
-              res.redirect(`http://107.20.124.171:3000/`);
+              res.redirect(`https://qviple.com/`);
             }
             // res.redirect(`${req.protocol}://${req.get("host")}/order/${body.orderId}`)
           });
@@ -261,7 +259,7 @@ exports.processEContentPayment = async (req, res, next) => {
   params["ORDER_ID"] = "oid" + uuidv4();
   params["CUST_ID"] = process.env.PAYTM_CUST_ID;
   params["TXN_AMOUNT"] = amount;
-  params["CALLBACK_URL"] = `http://${req.get(
+  params["CALLBACK_URL"] = `https://${req.get(
     "host"
   )}/api/v1/e-content/callback/user/${uid}/playlist/${pid}/ins/${fid}`;
   let paytmChecksum = paytm.generateSignature(
@@ -335,10 +333,10 @@ exports.paytmEContentResponse = (req, res, next) => {
               addEContentPayment(body, uid, pid);
               userEContentUpdated(uid, pid, fid, status, price);
               res.redirect(
-                `http://107.20.124.171:3000/user/${uid}/e-content/playlist/${pid}`
+                `https://qviple.com/user/${uid}/e-content/playlist/${pid}`
               );
             } else {
-              res.redirect(`http://107.20.124.171:3000/`);
+              res.redirect(`https://qviple.com/`);
             }
           });
         });
@@ -417,7 +415,7 @@ exports.processIdCardPayment = async (req, res, next) => {
   params["ORDER_ID"] = "oid" + uuidv4();
   params["CUST_ID"] = process.env.PAYTM_CUST_ID;
   params["TXN_AMOUNT"] = amount;
-  params["CALLBACK_URL"] = `http://${req.get(
+  params["CALLBACK_URL"] = `https://${req.get(
     "host"
   )}/api/v1/callback/ins/${id}/batch/${batchId}`;
   let paytmChecksum = paytm.generateSignature(
@@ -490,9 +488,9 @@ exports.paytmIdCardResponse = (req, res, next) => {
             if (status === "TXN_SUCCESS") {
               addIdCardPayment(body, id, batchId);
               userIdCardUpdated(id, batchId, status, price);
-              res.redirect(`http://107.20.124.171:3000/ins/${id}/student/card`);
+              res.redirect(`https://qviple.com/ins/${id}/student/card`);
             } else {
-              res.redirect(`http://107.20.124.171:3000/`);
+              res.redirect(`https://qviple.com/`);
             }
           });
         });
