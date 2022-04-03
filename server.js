@@ -498,7 +498,9 @@ app.get("/ins-login", (req, res) => {
   }
 });
 
-var d_date = new Date();
+var d_d_date = new Date()
+var d_date = new Date(d_d_date)
+d_date.setDate(d_date.getDate() + 2)
 var d_a_date = d_date.getDate();
 var d_a_month = d_date.getMonth() + 1;
 var d_a_year = d_date.getFullYear();
